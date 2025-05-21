@@ -3,7 +3,7 @@
 
 import type * as React from 'react';
 import { Star, Plus } from 'lucide-react';
-import { cn } from "@/lib/utils"; // Added missing import
+import { cn } from "@/lib/utils"; 
 
 interface AdditionProblem {
   num1: number;
@@ -11,12 +11,14 @@ interface AdditionProblem {
   correctAnswer: number;
   options: number[];
   type: 'addition' | 'subtraction';
+  actualCarry?: number; // For Stage 3
 }
 
 interface ProblemDisplayProps {
   problem: AdditionProblem | null;
   stageId: string;
   stage3AnswerDigits?: [string, string]; // For Stage 3 interactive input
+  actualCarry?: number; // Explicitly pass actualCarry for Stage 3
 }
 
 const MAX_STARS_PER_ROW = 5;
@@ -27,15 +29,22 @@ const AnswerBox = () => (
   </div>
 );
 
-// Renamed from CarryAnswerBox to be more generic for answer digit display
-const DigitDisplayBox = ({ digit, isCarryPlaceholder = false }: { digit?: string | number, isCarryPlaceholder?: boolean }) => (
-  <div className={cn(
-    "w-10 h-10 border rounded-md flex items-center justify-center text-2xl font-mono",
-    isCarryPlaceholder ? "border-red-500 bg-red-100/50 text-red-700" : "border-muted-foreground bg-background/50 text-primary"
-  )}>
-    {digit !== undefined ? digit : ''}
-  </div>
-);
+const DigitDisplayBox = ({ digit, isCarryPlaceholder = false }: { digit?: string | number, isCarryPlaceholder?: boolean }) => {
+  // Display the digit if it's not undefined AND (it's not a carry placeholder OR it's not 0)
+  // For actual carry, if it's 0, we want it to be blank.
+  const displayValue = digit !== undefined && !(isCarryPlaceholder && digit === 0) ? digit.toString() : '';
+  
+  return (
+    <div className={cn(
+      "w-10 h-10 border rounded-md flex items-center justify-center text-2xl font-mono",
+      isCarryPlaceholder 
+        ? (displayValue === '' ? "border-transparent" : "border-muted-foreground bg-transparent text-primary") // Subtle if empty, visible if has carry
+        : "border-muted-foreground bg-background/50 text-primary" // Normal answer digit box
+    )}>
+      {displayValue}
+    </div>
+  );
+};
 
 
 const PaddedNumber = ({ num }: { num: number}) => {
@@ -52,7 +61,7 @@ const PaddedNumber = ({ num }: { num: number}) => {
 };
 
 
-export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', ''] }: ProblemDisplayProps): React.JSX.Element {
+export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', ''], actualCarry }: ProblemDisplayProps): React.JSX.Element {
   if (!problem) {
     return <p className="text-muted-foreground text-xl">Loading problem...</p>;
   }
@@ -108,9 +117,12 @@ export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', '']
       {stageId === 'add-carry' && (
         <div className="addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto">
           <div className="carry-row">
-            {/* Visual cue for carry, not interactive for now */}
-            <DigitDisplayBox isCarryPlaceholder={true} /> 
-            <div className="w-10 h-10"></div> {/* Spacer for ones column */}
+             {/* Display actual calculated carry. Pass isCarryPlaceholder true to style it as a carry box */}
+            <DigitDisplayBox 
+              digit={(actualCarry !== undefined && actualCarry > 0) ? actualCarry : ''} 
+              isCarryPlaceholder={true} 
+            /> 
+            <div className="w-10 h-10"></div> {/* Spacer for ones column align with PaddedNumber */}
           </div>
           <div className="operand-row justify-end">
             <PaddedNumber num={problem.num1} />
