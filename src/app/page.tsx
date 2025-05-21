@@ -17,11 +17,6 @@ import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 
-// NOTE TO USER: Please create a 'sounds' folder in your 'public' directory.
-// Add 'correct_clap.mp3' and 'incorrect_buzz.mp3' (or similar sounds) to 'public/sounds/'.
-const CORRECT_SOUND_SRC = '/sounds/correct_clap.mp3';
-const INCORRECT_SOUND_SRC = '/sounds/incorrect_buzz.mp3';
-
 export default function PlaceValuePage(): React.JSX.Element {
   const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
   const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE);
@@ -43,29 +38,6 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
 
   const { toast } = useToast();
-
-  const [correctAudio, setCorrectAudio] = useState<HTMLAudioElement | null>(null);
-  const [incorrectAudio, setIncorrectAudio] = useState<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const correctSound = new Audio(CORRECT_SOUND_SRC);
-      const incorrectSound = new Audio(INCORRECT_SOUND_SRC);
-      correctSound.preload = 'auto';
-      incorrectSound.preload = 'auto';
-      setCorrectAudio(correctSound);
-      setIncorrectAudio(incorrectSound);
-    }
-  }, []);
-
-  const playCorrectSound = useCallback(() => {
-    correctAudio?.play().catch(error => console.error("Error playing correct sound:", error, "Ensure sound file exists at", CORRECT_SOUND_SRC));
-  }, [correctAudio]);
-
-  const playIncorrectSound = useCallback(() => {
-    incorrectAudio?.play().catch(error => console.error("Error playing incorrect sound:", error, "Ensure sound file exists at", INCORRECT_SOUND_SRC));
-  }, [incorrectAudio]);
-
 
   const generateOptions = useCallback((correctNum: number, maxNum: number): number[] => {
     const incorrectOptions = new Set<number>();
@@ -111,7 +83,8 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
 
   const proceedToNextStep = useCallback(() => {
-    setScore(prev => ({ ...prev, total: prev.total + 1 })); 
+    // Increment total score only when a correct answer leads to progression
+    // setScore(prev => ({ ...prev, total: prev.total + 1 })); 
 
     if (questionsInBatch + 1 >= QUESTIONS_PER_BATCH) {
       setGameStage("evaluatingAI");
@@ -127,19 +100,18 @@ export default function PlaceValuePage(): React.JSX.Element {
     setLastCorrectAnswerForAI(targetNumber);
 
     if (answer === targetNumber) {
-      playCorrectSound();
       setScore(prev => ({ 
         correct: prev.correct + 1,
-        total: prev.total 
+        total: prev.total + 1 // Increment total score on correct answer progression
       }));
       setGameStage("answered"); 
       setTimeout(() => {
         proceedToNextStep();
       }, 1000); // 1 second delay before moving to next question
     } else {
-      playIncorrectSound();
       // User stays on the same question. gameStage remains "playing".
       // selectedAnswer is set, so the button will be red.
+      // Score 'total' is not incremented here for incorrect attempts on the same question.
     }
   };
   
@@ -147,7 +119,7 @@ export default function PlaceValuePage(): React.JSX.Element {
     toast({
       title: "Hint!",
       description: `Try counting the blue (tens) and yellow (ones) blocks carefully! Each blue stack is 10.`,
-      duration: 2000, // Auto-close after 2 seconds
+      duration: 2000, 
     });
   };
 
@@ -161,7 +133,6 @@ export default function PlaceValuePage(): React.JSX.Element {
             level: currentMaxNumber,
             studentAnswer: lastSelectedAnswerForAI,
             correctAnswer: lastCorrectAnswerForAI,
-            // Ensure score.total for score string is at least 1 to avoid "X out of 0"
             score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
           };
           const aiResponse = await adaptiveTutoring(aiInput);
@@ -177,7 +148,6 @@ export default function PlaceValuePage(): React.JSX.Element {
         } catch (error) {
           console.error("Error with AI Tutor:", error);
           toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive" });
-          // Reset score and batch for current level if AI fails, then generate new question
           setScore({ correct: 0, total: 0 });
           setQuestionsInBatch(0);
           generateNewQuestion(currentMaxNumber); 
@@ -190,7 +160,6 @@ export default function PlaceValuePage(): React.JSX.Element {
   }, [gameStage, currentMaxNumber, lastSelectedAnswerForAI, lastCorrectAnswerForAI, score, toast, generateNewQuestion]);
 
   const handleAIClose = () => {
-    // AI Dialog closed, generate new question for the (potentially new) currentMaxNumber
     generateNewQuestion(currentMaxNumber);
   };
 
