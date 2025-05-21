@@ -17,6 +17,11 @@ import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 
+// NOTE TO USER: Please create a 'sounds' folder in your 'public' directory.
+// Add 'correct_clap.mp3' and 'incorrect_buzz.mp3' (or similar sounds) to 'public/sounds/'.
+const CORRECT_SOUND_SRC = '/sounds/correct_clap.mp3';
+const INCORRECT_SOUND_SRC = '/sounds/incorrect_buzz.mp3';
+
 export default function PlaceValuePage(): React.JSX.Element {
   const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
   const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE);
@@ -27,8 +32,6 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [options, setOptions] = useState<number[]>([]);
   
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  // Feedback state is no longer used for UI text, only for button color logic if needed elsewhere
-  // const [feedback, setFeedback] = useState<string>("");
   
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
   const [questionsInBatch, setQuestionsInBatch] = useState<number>(0);
@@ -40,6 +43,29 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
 
   const { toast } = useToast();
+
+  const [correctAudio, setCorrectAudio] = useState<HTMLAudioElement | null>(null);
+  const [incorrectAudio, setIncorrectAudio] = useState<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const correctSound = new Audio(CORRECT_SOUND_SRC);
+      const incorrectSound = new Audio(INCORRECT_SOUND_SRC);
+      correctSound.preload = 'auto';
+      incorrectSound.preload = 'auto';
+      setCorrectAudio(correctSound);
+      setIncorrectAudio(incorrectSound);
+    }
+  }, []);
+
+  const playCorrectSound = useCallback(() => {
+    correctAudio?.play().catch(error => console.error("Error playing correct sound:", error, "Ensure sound file exists at", CORRECT_SOUND_SRC));
+  }, [correctAudio]);
+
+  const playIncorrectSound = useCallback(() => {
+    incorrectAudio?.play().catch(error => console.error("Error playing incorrect sound:", error, "Ensure sound file exists at", INCORRECT_SOUND_SRC));
+  }, [incorrectAudio]);
+
 
   const generateOptions = useCallback((correctNum: number, maxNum: number): number[] => {
     const incorrectOptions = new Set<number>();
@@ -67,7 +93,6 @@ export default function PlaceValuePage(): React.JSX.Element {
     setOnes(newTarget % 10);
     setOptions(generateOptions(newTarget, maxNum));
     setSelectedAnswer(null);
-    // setFeedback(""); // No longer used for UI text
     setGameStage("playing");
   }, [generateOptions]);
 
@@ -82,41 +107,10 @@ export default function PlaceValuePage(): React.JSX.Element {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
     setQuestionsInBatch(0);
-    setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); // Reset level
+    setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); 
   };
 
-  const handleAnswerSelect = (answer: number) => {
-    setSelectedAnswer(answer); // Show selection (button will turn red or green)
-    setLastSelectedAnswerForAI(answer); // For AI Tutor
-    setLastCorrectAnswerForAI(targetNumber); // For AI Tutor
-
-    if (answer === targetNumber) {
-      // Correct Answer
-      setScore(prev => ({ 
-        correct: prev.correct + 1,
-        total: prev.total // Total increments when proceeding to next question
-      }));
-      setGameStage("answered"); // Go to "answered" state, "Next Question" button appears
-    } else {
-      // Incorrect Answer
-      // User stays on the same question. `gameStage` remains "playing".
-      // `selectedAnswer` is set, so the button will be red.
-      // They can choose another option from the QuizControls.
-      // Score is not updated for an incorrect attempt on the current question.
-    }
-  };
-  
-  const handleShowHint = () => {
-    // setFeedback(`Hint: The number is ${targetNumber}. Try to count the blocks!`); // No text feedback
-    toast({
-      title: "Hint!",
-      description: `Try counting the blue (tens) and yellow (ones) blocks carefully! Each blue stack is 10.`,
-    });
-  };
-
-  const proceedToNextStep = () => {
-    // This is called after a correct answer.
-    // Increment total questions *completed* here.
+  const proceedToNextStep = useCallback(() => {
     setScore(prev => ({ ...prev, total: prev.total + 1 })); 
 
     if (questionsInBatch + 1 >= QUESTIONS_PER_BATCH) {
@@ -125,7 +119,38 @@ export default function PlaceValuePage(): React.JSX.Element {
       setQuestionsInBatch(prev => prev + 1);
       generateNewQuestion(currentMaxNumber);
     }
+  }, [questionsInBatch, currentMaxNumber, generateNewQuestion]);
+
+  const handleAnswerSelect = (answer: number) => {
+    setSelectedAnswer(answer); 
+    setLastSelectedAnswerForAI(answer); 
+    setLastCorrectAnswerForAI(targetNumber);
+
+    if (answer === targetNumber) {
+      playCorrectSound();
+      setScore(prev => ({ 
+        correct: prev.correct + 1,
+        total: prev.total 
+      }));
+      setGameStage("answered"); 
+      setTimeout(() => {
+        proceedToNextStep();
+      }, 1000); // 1 second delay before moving to next question
+    } else {
+      playIncorrectSound();
+      // User stays on the same question. gameStage remains "playing".
+      // selectedAnswer is set, so the button will be red.
+    }
   };
+  
+  const handleShowHint = () => {
+    toast({
+      title: "Hint!",
+      description: `Try counting the blue (tens) and yellow (ones) blocks carefully! Each blue stack is 10.`,
+      duration: 2000, // Auto-close after 2 seconds
+    });
+  };
+
 
   useEffect(() => {
     if (gameStage === "evaluatingAI") {
@@ -136,7 +161,8 @@ export default function PlaceValuePage(): React.JSX.Element {
             level: currentMaxNumber,
             studentAnswer: lastSelectedAnswerForAI,
             correctAnswer: lastCorrectAnswerForAI,
-            score: `${score.correct} out of ${score.total || 1} correct`, // ensure score.total is not 0 for string
+            // Ensure score.total for score string is at least 1 to avoid "X out of 0"
+            score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
           };
           const aiResponse = await adaptiveTutoring(aiInput);
           
@@ -146,14 +172,15 @@ export default function PlaceValuePage(): React.JSX.Element {
           setCurrentMaxNumber(nextLevel);
           setAiTutorExplanation(aiResponse.explanation);
           setGameStage("aiFeedback");
-          // Reset score for the new batch of questions at the new level
           setScore({ correct: 0, total: 0 }); 
           setQuestionsInBatch(0);
         } catch (error) {
           console.error("Error with AI Tutor:", error);
           toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive" });
-          setGameStage("playing"); // Go back to playing
-          generateNewQuestion(currentMaxNumber); // Generate new question for current level
+          // Reset score and batch for current level if AI fails, then generate new question
+          setScore({ correct: 0, total: 0 });
+          setQuestionsInBatch(0);
+          generateNewQuestion(currentMaxNumber); 
         } finally {
           setIsLoadingAI(false);
         }
@@ -163,7 +190,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   }, [gameStage, currentMaxNumber, lastSelectedAnswerForAI, lastCorrectAnswerForAI, score, toast, generateNewQuestion]);
 
   const handleAIClose = () => {
-    setGameStage("playing");
+    // AI Dialog closed, generate new question for the (potentially new) currentMaxNumber
     generateNewQuestion(currentMaxNumber);
   };
 
@@ -181,7 +208,7 @@ export default function PlaceValuePage(): React.JSX.Element {
       <div className="w-full max-w-3xl flex justify-between items-start mb-4 px-2">
         {gameStage !== "levelSelection" ? (
            <ScoreDisplay correct={score.correct} total={score.total} />
-        ) : <div className="h-10"/>} {/* Placeholder to keep layout consistent and prevent jump */}
+        ) : <div className="h-10"/>} 
         
         {gameStage !== "levelSelection" && (
           <Button variant="outline" size="lg" onClick={handleGoHome} className="shadow-md">
@@ -190,32 +217,29 @@ export default function PlaceValuePage(): React.JSX.Element {
         )}
       </div>
 
-      {/* Header text removed, title is in layout.tsx metadata */}
-
       {gameStage === "levelSelection" && (
-        <LevelSelector onLevelSelect={handleLevelSelect} disabled={isLoadingAI} />
+        <LevelSelector onLevelSelect={handleLevelSelect} disabled={isLoadingAI || gameStage === "evaluatingAI"} />
       )}
 
       {(gameStage === "playing" || gameStage === "answered") && (
-        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-stretch mt-2"> {/* items-stretch to make columns equal height */}
-          <Card className="shadow-xl flex flex-col"> {/* flex flex-col for Card */}
+        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-stretch mt-2">
+          <Card className="shadow-xl flex flex-col">
             <CardHeader>
               <CardTitle className="text-3xl text-center text-primary">Count the Blocks!</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow"> {/* flex-grow to take available space */}
+            <CardContent className="flex-grow"> 
               <BlockDisplay tens={tens} ones={ones} />
             </CardContent>
           </Card>
-          <div className="flex flex-col h-full pt-2 md:pt-0"> {/* This div will contain QuizControls */}
+          <div className="flex flex-col h-full pt-2 md:pt-0"> 
             <QuizControls
               options={options}
               onAnswerSelect={handleAnswerSelect}
               onShowHint={handleShowHint}
-              onNextQuestion={proceedToNextStep}
               isAnswered={gameStage === "answered"}
               selectedAnswer={selectedAnswer}
               correctAnswer={targetNumber}
-              className="mt-auto" // Pushes QuizControls to the bottom
+              className="mt-auto" 
             />
           </div>
         </div>

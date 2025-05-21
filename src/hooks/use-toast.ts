@@ -1,3 +1,4 @@
+
 "use client"
 
 // Inspired by react-hot-toast library
@@ -9,13 +10,16 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+// TOAST_REMOVE_DELAY is for when toast is dismissed, how long it stays in DOM before removal.
+// Default auto-dismiss is handled by individual toast calls via `duration`.
+const TOAST_REMOVE_DELAY = 1000 
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number // Added duration for individual toasts
 }
 
 const actionTypes = {
@@ -93,8 +97,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -140,9 +142,9 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+type Toast = Omit<ToasterToast, "id" | "open" | "onOpenChange">;
 
-function toast({ ...props }: Toast) {
+function toast({ duration, ...props }: Toast & { duration?: number }) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -163,6 +165,12 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  if (duration) {
+    setTimeout(() => {
+      dismiss()
+    }, duration)
+  }
 
   return {
     id: id,

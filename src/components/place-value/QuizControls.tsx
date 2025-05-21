@@ -4,15 +4,14 @@
 import type * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lightbulb, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import { Lightbulb, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface QuizControlsProps {
   options: number[];
   onAnswerSelect: (answer: number) => void;
   onShowHint: () => void;
-  onNextQuestion: () => void;
-  isAnswered: boolean; // True only if gameStage is "answered" (i.e., correct answer given)
+  isAnswered: boolean; // True if gameStage is "answered" (correct answer given, before auto-advance)
   selectedAnswer: number | null;
   correctAnswer: number | null;
   className?: string;
@@ -22,25 +21,26 @@ export function QuizControls({
   options,
   onAnswerSelect,
   onShowHint,
-  onNextQuestion,
-  isAnswered, // This now strictly means the question was answered *correctly*
+  isAnswered, 
   selectedAnswer,
   correctAnswer,
   className,
 }: QuizControlsProps): React.JSX.Element {
   
   const getButtonVariant = (option: number) => {
-    if (selectedAnswer === null) return "outline"; // No answer selected yet
-    if (isAnswered && option === correctAnswer) return "default"; // Correct answer submitted and stage is "answered"
-    if (selectedAnswer === option && option !== correctAnswer) return "destructive"; // Incorrect answer selected
-    if (selectedAnswer === option && option === correctAnswer && !isAnswered) return "outline"; // Correct option clicked, but not yet "answered" stage (should not happen with current logic)
-    return "outline"; // Default for other options
+    if (selectedAnswer === null) return "outline"; 
+    // If an answer is selected (correct or incorrect)
+    if (selectedAnswer === option) {
+      return option === correctAnswer ? "default" : "destructive"; // Green if correct, Red if incorrect
+    }
+    return "outline"; // Default for other unselected options
   };
 
   const getButtonIcon = (option: number) => {
     if (selectedAnswer === null) return null;
-    if (isAnswered && option === correctAnswer) return <CheckCircle2 className="mr-2 h-5 w-5" />;
-    if (selectedAnswer === option && option !== correctAnswer) return <XCircle className="mr-2 h-5 w-5" />;
+    if (selectedAnswer === option) {
+      return option === correctAnswer ? <CheckCircle2 className="mr-2 h-5 w-5" /> : <XCircle className="mr-2 h-5 w-5" />;
+    }
     return null;
   };
 
@@ -55,8 +55,8 @@ export function QuizControls({
               size="lg"
               className="text-lg h-16"
               onClick={() => onAnswerSelect(option)}
-              // Buttons are disabled only if the question has been correctly answered and awaiting "Next"
-              disabled={isAnswered} 
+              // Buttons are disabled if the question has been correctly answered and awaiting auto-advance
+              disabled={isAnswered && selectedAnswer === correctAnswer} 
             >
               {getButtonIcon(option)}
               {option}
@@ -64,22 +64,16 @@ export function QuizControls({
           ))}
         </div>
         
-        {/* Feedback text display removed as per user request */}
-
-        <div className="flex justify-between items-center pt-2">
+        <div className="flex justify-center items-center pt-2"> {/* Centered hint button */}
           <Button 
             variant="ghost" 
             onClick={onShowHint} 
-            disabled={isAnswered} // Disable hint if question is correctly answered
+            disabled={isAnswered && selectedAnswer === correctAnswer} // Disable hint if question is correctly answered
             className="text-accent-foreground hover:text-accent"
           >
             <Lightbulb className="mr-2 h-5 w-5" /> Hint
           </Button>
-          {isAnswered && ( // "Next Question" button only appears if isAnswered is true (correct answer given)
-            <Button onClick={onNextQuestion} size="lg" className="bg-primary hover:bg-primary/90">
-              Next Question <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          )}
+          {/* "Next Question" button removed as progression is automatic */}
         </div>
       </CardContent>
     </Card>
