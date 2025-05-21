@@ -3,7 +3,7 @@
 
 import type * as React from 'react';
 import { Star, Minus } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"; // Ensure cn is imported
 
 interface SubtractionProblem {
   minuend: number;
@@ -29,9 +29,10 @@ const AnswerBox = () => (
   </div>
 );
 
+// Component to display a single digit, used for Stage 3 sum input boxes
 const DigitDisplayBox = ({
   digit,
-  isBorrowVisualization = false, 
+  isBorrowVisualization = false, // Not used in this version, kept for potential future use
   isEmptyPlaceholder = false,
 }: {
   digit?: string | number;
@@ -44,23 +45,22 @@ const DigitDisplayBox = ({
   return (
     <div className={cn(
       "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
-      isBorrowVisualization
-        ? "border-orange-500 bg-orange-50 text-orange-700" 
-        : isEmptyPlaceholder && effectiveDigit === ''
+      // isBorrowVisualization: Handled by direct styling in Stage 3 minuend display
+      isEmptyPlaceholder && effectiveDigit === ''
             ? "border-dashed border-muted-foreground/50"
             : "border-muted-foreground bg-background/50 text-primary",
-       effectiveDigit === '' && !isBorrowVisualization && !isEmptyPlaceholder && "text-transparent",
+       effectiveDigit === '' && !isEmptyPlaceholder && "text-transparent",
     )}>
-      {effectiveDigit || (isBorrowVisualization || isEmptyPlaceholder ? '' : '\u00A0')}
+      {effectiveDigit || (isEmptyPlaceholder ? '' : '\u00A0')}
     </div>
   );
 };
 
-
+// Component to display problem numbers (subtrahend) with padding for column alignment
 const PaddedNumber = ({ num }: { num: number}) => {
   const strNum = String(num);
   const onesDisplay = strNum.slice(-1);
-  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0'; 
+  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0'; // Non-breaking space
 
   return (
     <div className="grid grid-cols-2 gap-x-1 w-auto">
@@ -104,13 +104,13 @@ export function ProblemDisplay({
     return <div className="my-2 min-h-[50px]">{rows}</div>;
   };
   
-  // Using addition-column-display class for consistent styling base
   const columnDisplayClass = "addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto";
-  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; // For two w-10 boxes and gap-x-1
+  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; 
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
       {stageId === 'sub-visual' && (
+        // ... (Visual stage remains the same)
         <div className="flex flex-col items-center space-y-2 sm:space-y-3">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex flex-col items-center">{renderStars(problem.minuend)}</div>
@@ -125,6 +125,7 @@ export function ProblemDisplay({
       )}
 
       {stageId === 'sub-numbers' && (
+        // ... (Numbers stage remains the same)
         <div className="flex items-center justify-center space-x-2 sm:space-x-3">
           <p className="text-5xl sm:text-6xl font-bold text-foreground">{problem.minuend}</p>
           <Minus className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
@@ -134,18 +135,42 @@ export function ProblemDisplay({
         </div>
       )}
 
-      {stageId === 'sub-borrow' && (
+      {stageId === 'sub-borrow' && problem && (
          <div className={cn(columnDisplayClass)}>
-          {/* Borrowing Visualization Row (Non-interactive placeholder for future enhancement) */}
-          <div className="grid grid-cols-2 gap-x-1 w-auto min-h-[2.5rem] mb-0.5">
-            {/* Example: <DigitDisplayBox digit={'4'} isBorrowVisualization={true} /> <DigitDisplayBox digit={'12'} isBorrowVisualization={true} /> */}
-            {/* For now, it's just a spacer */}
-            <div className="w-10"></div> 
-            <div className="w-10"></div> 
+          {/* Minuend Row with Borrowing Visualization */}
+          <div className="grid grid-cols-2 gap-x-1 w-auto text-center mb-1 relative">
+            {(() => {
+              const minuendTensOriginal = Math.floor(problem.minuend / 10);
+              const minuendOnesOriginal = problem.minuend % 10;
+              
+              if (problem.actualIsBorrowingNeeded) {
+                const newTens = minuendTensOriginal - 1;
+                const newOnes = minuendOnesOriginal + 10;
+                return (
+                  <>
+                    {/* Tens Column */}
+                    <div className="relative h-12 flex flex-col items-center justify-center">
+                      <span className="absolute top-0 text-xl text-orange-500 font-semibold">{newTens < 0 ? ' ' : newTens}</span>
+                      <span className="mt-5 line-through text-muted-foreground/60">{minuendTensOriginal || '\u00A0'}</span>
+                    </div>
+                    {/* Ones Column */}
+                    <div className="relative h-12 flex flex-col items-center justify-center">
+                      <span className="absolute top-0 text-xl text-orange-500 font-semibold">{newOnes}</span>
+                      <span className="mt-5 line-through text-muted-foreground/60">{minuendOnesOriginal}</span>
+                    </div>
+                  </>
+                );
+              } else {
+                // Should not happen for 'sub-borrow' stage due to problem generation logic, but as a fallback:
+                return (
+                  <>
+                    <span className="w-10 text-center">{minuendTensOriginal || '\u00A0'}</span>
+                    <span className="w-10 text-center">{minuendOnesOriginal}</span>
+                  </>
+                );
+              }
+            })()}
           </div>
-
-          {/* Minuend Row */}
-          <PaddedNumber num={problem.minuend} />
 
           {/* Operator + Subtrahend Row */}
           <div className="flex justify-end items-center w-full mt-1">
@@ -171,5 +196,3 @@ export function ProblemDisplay({
     </div>
   );
 }
-
-    
