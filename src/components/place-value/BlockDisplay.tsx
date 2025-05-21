@@ -21,7 +21,7 @@ export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Eleme
             {tenBlocks.map((_, index) => (
               <div key={`ten-${index}`} className="bg-primary rounded p-1 shadow-md" data-ai-hint="ten blocks group">
                 <Image
-                  src="https://placehold.co/100x25/29ABE2/FFFFFF?text=TEN"
+                  src="https://placehold.co/100x25.png"
                   alt="Ten block"
                   width={100}
                   height={25}
@@ -40,7 +40,7 @@ export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Eleme
             {oneBlocks.map((_, index) => (
               <div key={`one-${index}`} className="bg-accent rounded p-1 shadow-md" data-ai-hint="one block item">
                 <Image
-                  src="https://placehold.co/25x25/FFDA63/333333?text=ONE"
+                  src="https://placehold.co/25x25.png"
                   alt="One block"
                   width={25}
                   height={25}
