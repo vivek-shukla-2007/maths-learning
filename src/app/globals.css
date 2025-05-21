@@ -124,10 +124,9 @@
 
  /* Styles for Column Addition in ProblemDisplay.tsx */
   .addition-column-display {
-    display: grid;
-    /* Rows: Carry, Num1, Operator+Num2, Line, Result */
-    grid-template-rows: auto auto auto auto auto; 
-    justify-items: end; /* Aligns items to the right of their grid cell */
+    display: flex; /* Changed to flex column */
+    flex-direction: column;
+    align-items: flex-end; /* Align children (rows) to the right */
     gap: 0.1rem; /* Very small gap between rows */
     width: fit-content; /* Adjusts to content size */
     margin: 0 auto; /* Centers the block */
@@ -144,49 +143,12 @@
       font-size: 2.25rem; /* text-4xl */
     }
   }
-
-  .addition-column-display .carry-row {
-    grid-column: 1 / -1; /* Span all columns defined by content below */
-    display: grid; 
-    /* This grid should align with PaddedNumber's internal grid.
-       PaddedNumber has 2 columns (tens, ones). Carry box goes above tens. */
-    grid-template-columns: repeat(2, minmax(0, auto)); /* Two columns for tens and ones positions */
-    justify-items: center; /* Center carry box in its designated column cell */
-    width: 100%; /* Ensure it uses the width determined by numbers below */
-    min-height: 2.5rem; /* Ensure space for carry box, adjust as needed */
-    position: relative; /* For fine-tuning if needed */
-  }
   
-  .addition-column-display .operand-row {
-    grid-column: 1 / -1;
-    justify-self: end; 
-  }
-
-  .addition-column-display .operator-operand-row {
-    grid-column: 1 / -1;
-    display: flex; /* Use flex to align operator and PaddedNumber */
-    justify-content: flex-end; 
-    align-items: center;
-    width: 100%; /* Ensure full width to align with PaddedNumbers */
-  }
-  
-  .addition-column-display .operator-operand-row .operator {
-     margin-right: 0.25em; /* Space between operator and number */
-  }
-  
-  .addition-column-display .line {
-    grid-column: 1 / -1;
-    height: 2px;
-    width: 100%; 
-    margin-top: 0.2rem;
-    margin-bottom: 0.2rem;
-  }
-  
-  .addition-column-display .result-row {
-    grid-column: 1 / -1;
-    justify-self: end;
-     /* The inner grid here should match PaddedNumber's structure */
-  }
+  /* Each row (carry, num1, num2, result) is now a flex item aligned to the end by parent.
+     Their internal structure (like PaddedNumber or grid for result) handles tens/ones alignment.
+     The min-h-[2.5rem] on the carry display row in ProblemDisplay.tsx helps maintain spacing.
+     The line width is dynamically calculated in ProblemDisplay.tsx.
+  */
 
   /* General Answer Box for Stages 1 & 2 */
   .answer-box-visual {
@@ -194,3 +156,5 @@
   }
   
 }
+
+    

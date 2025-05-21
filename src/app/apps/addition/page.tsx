@@ -88,7 +88,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     if (stage.id === 'add-visual') {
       num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
       num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
-      while (num1 + num2 > 10) {
+      while (num1 + num2 > 10) { // Ensure sum is at most 10 for visual stage
         num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
         num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
       }
@@ -96,74 +96,35 @@ export default function AdditionAdventurePage(): React.JSX.Element {
       num1 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
       num2 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
       if (num1 === 10) {
-        num2 = Math.floor(Math.random() * 10);
+        num2 = Math.floor(Math.random() * 10); // Max sum 19 if num1 is 10
       } else if (num2 === 10) {
-        num1 = Math.floor(Math.random() * 10);
+        num1 = Math.floor(Math.random() * 10); // Max sum 19 if num2 is 10
       }
-       while (num1 + num2 > 19) { 
+       while (num1 + num2 > 19) { // General cap for sums in stage 2
         num1 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
         num2 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
         if (num1 === 10) num2 = Math.floor(Math.random() * 10);
         else if (num2 === 10) num1 = Math.floor(Math.random() * 10);
        }
     } else if (stage.id === 'add-carry') {
-       // Ensure problems for Stage 3 ALWAYS involve a carry.
-       // Max operand value is 20 (from constants).
-       // Types of problems ensuring a carry:
-       // 1. Single digit + single digit (e.g., 7+5, sum of ones >= 10)
-       // 2. Double digit + single digit (e.g., 17+5, 7+5 >=10)
-       // 3. Double digit + double digit (e.g., 17+15, 7+5 >=10)
-       
        let ones1 = 0, ones2 = 0;
        let tens1 = 0, tens2 = 0;
 
        do {
-         const typeOfProblem = Math.random();
-         if (typeOfProblem < 0.33) { // Single digit + single digit (results in carry)
-             tens1 = 0;
-             tens2 = 0;
-             ones1 = Math.floor(Math.random() * 5) + 5; // 5-9
-             ones2 = Math.floor(Math.random() * (9 - (10 - ones1) +1)) + (10 - ones1); // Ensures ones1+ones2 >= 10
-         } else if (typeOfProblem < 0.66) { // Double digit + single digit (ensure num1 is double digit)
-             tens1 = 1; // e.g. 10-19
-             ones1 = Math.floor(Math.random() * 10); // 0-9
-             tens2 = 0;
-             ones2 = Math.floor(Math.random() * 10); // 0-9
-             // Ensure ones1 + ones2 >= 10
-             if (ones1 + ones2 < 10) {
-                 const diff = 10 - (ones1 + ones2);
-                 if (ones1 <= ones2 && ones1 + diff <= 9) ones1 += diff;
-                 else if (ones2 < ones1 && ones2 + diff <=9) ones2 +=diff;
-                 else { // If both are high, adjust one to make sum >=10, e.g. make one 5 and other 5
-                    ones1 = Math.floor(Math.random() * 5) + 5;
-                    ones2 = 10 - ones1 + Math.floor(Math.random() * (9 - (10 - ones1) + 1) );
-                 }
-             }
-         } else { // Double digit + double digit
-             tens1 = 1;
-             ones1 = Math.floor(Math.random() * 10);
-             tens2 = 1;
-             ones2 = Math.floor(Math.random() * 10);
-             // Ensure ones1 + ones2 >= 10
-             if (ones1 + ones2 < 10) {
-                 const diff = 10 - (ones1 + ones2);
-                 if (ones1 <= ones2 && ones1 + diff <= 9) ones1 += diff;
-                 else if (ones2 < ones1 && ones2 + diff <=9) ones2 +=diff;
-                 else {
-                    ones1 = Math.floor(Math.random() * 5) + 5;
-                    ones2 = 10 - ones1 + Math.floor(Math.random() * (9 - (10 - ones1) + 1) );
-                 }
-             }
-         }
-       } while (ones1 + ones2 < 10); // Loop until a carry is guaranteed
+         // Ensure numbers are between 1 and 99 for operands for more variety, can adjust later if needed
+         num1 = Math.floor(Math.random() * 99) + 1; // 1-99
+         num2 = Math.floor(Math.random() * 99) + 1; // 1-99
 
-       num1 = tens1 * 10 + ones1;
-       num2 = tens2 * 10 + ones2;
+         ones1 = num1 % 10;
+         tens1 = Math.floor(num1 / 10);
+         ones2 = num2 % 10;
+         tens2 = Math.floor(num2 / 10);
 
-       // Ensure num1 is generally larger or the first number for conventional display
-       if (num1 < num2 && (num1 >=10 && num2 >=10)) [num1, num2] = [num2, num1]; 
-       else if (num2 >=10 && num1 < 10) [num1, num2] = [num2, num1]; // Ensure 2-digit number is on top if one is single digit
+       } while (ones1 + ones2 < 10 || num1 + num2 > 99); // Ensure carry AND sum is max 2 digits for simplicity
 
+       // Optional: Ensure num1 is generally larger or the first number for conventional display
+       if (num1 < num2) [num1, num2] = [num2, num1]; 
+       
        actualCarry = Math.floor(( (num1 % 10) + (num2 % 10) ) / 10);
     }
 
@@ -201,24 +162,26 @@ export default function AdditionAdventurePage(): React.JSX.Element {
         total: prev.total + 1
       }));
       setFeedbackAnimation({ type: 'correct', key: Date.now() });
-      setGameView("answered");
+      setGameView("answered"); // Keep in answered state briefly for feedback
       setTimeout(() => {
         proceedToNextProblem();
         setFeedbackAnimation(null);
       }, 1200);
     } else {
-      if (currentStageId !== 'add-carry') {
-         setScore(prev => ({ ...prev, total: prev.total +1}));
-      } else {
-         setScore(prev => ({ ...prev, total: prev.total + 1}));
-      }
+      // For Stage 1 & 2, just show feedback, user can retry or will be prompted next
+      // For Stage 3, clear inputs and let them retry the same problem.
+      setScore(prev => ({ ...prev, total: prev.total + 1})); // Increment total for incorrect attempts too
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
       setTimeout(() => {
         setFeedbackAnimation(null);
         if (currentStageId === 'add-carry') {
-          // Do not clear inputs automatically, let user see their mistake and use Clear button or correct input.
+          // Do not clear inputs immediately, let user see their mistake before using Clear or correcting input.
+          // Or, clear if you want them to restart that problem entry from scratch:
           // setStage3Inputs(initialStage3Inputs); 
-          setGameView("playing"); 
+          setGameView("playing"); // Allow re-input
+        } else {
+           // For stages 1 and 2, if incorrect, just show feedback and user clicks again.
+           // No automatic progression to next question on incorrect.
         }
       }, 1200);
     }
@@ -233,9 +196,10 @@ export default function AdditionAdventurePage(): React.JSX.Element {
   const handleStage3DigitPress = (digit: string) => {
     setStage3Inputs(prev => {
       if (prev.sumOnes === '') return { ...prev, sumOnes: digit };
-      if (prev.sumTens === '') return { ...prev, sumTens: digit };
+      // Carry box appears after sumOnes is filled. User then fills carry.
       if (prev.carry === '') return { ...prev, carry: digit };
-      return prev; // All full
+      if (prev.sumTens === '') return { ...prev, sumTens: digit };
+      return prev; // All input fields (sumOnes, carry, sumTens) are full
     });
   };
 
@@ -248,17 +212,21 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     
     const { carry, sumTens, sumOnes } = stage3Inputs;
 
-    if (sumOnes === '' && sumTens === '') {
-        toast({ title: "Missing Answer", description: "Please enter digits for the sum.", variant: "destructive", duration: 2000 });
+    if (sumOnes === '' || sumTens === '' || (currentProblem.actualCarry > 0 && carry === '')) {
+        let message = "Please fill all answer boxes.";
+        if (currentProblem.actualCarry > 0 && carry === '' && sumOnes !== '' && sumTens !== '') {
+            message = "Don't forget the carry!"
+        } else if (sumOnes === '') {
+            message = "Please enter the ones digit for the sum.";
+        } else if (sumTens === '') {
+            message = "Please enter the tens digit for the sum.";
+        }
+        toast({ title: "Missing Input", description: message, variant: "destructive", duration: 2000 });
         return;
     }
     
-    const enteredSumOnes = sumOnes === '' ? '0' : sumOnes; // Default for calculation if empty, though ideally filled
-    const enteredSumTens = sumTens === '' ? '0' : sumTens;
-    const enteredCarry = carry === '' ? '0' : carry;
-
-    const enteredSum = parseInt(enteredSumTens + enteredSumOnes, 10);
-    const enteredCarryNum = parseInt(enteredCarry, 10);
+    const enteredSum = parseInt(sumTens + sumOnes, 10);
+    const enteredCarryNum = parseInt(carry || '0', 10); // Default to 0 if carry is empty (e.g. problem has no actual carry)
 
     const isCarryCorrect = enteredCarryNum === currentProblem.actualCarry;
     const isSumCorrect = enteredSum === currentProblem.correctAnswer;
@@ -277,13 +245,13 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     } else if (stage?.id === 'add-numbers') {
       hintDescription = `What is ${currentProblem.num1} plus ${currentProblem.num2}?`;
     } else if (stage?.id === 'add-carry') {
-       hintDescription = `Add the ones column first. Input the ones digit of that sum. Then input the tens digit of that sum. Finally, if there was a carry from adding the ones, input the carry digit (usually '1') in the red box above the tens column. For this problem, the actual carry you should get from the ones column is ${currentProblem.actualCarry}.`;
+       hintDescription = `Add the ones column. Enter the ones digit of that sum. Then, if there was a carry, enter the carry digit (e.g., '1') in the red box. Finally, add the tens column (including any carry) and enter the tens digit of that sum. For this problem, the carry from the ones column is ${currentProblem.actualCarry}.`;
     }
 
     toast({
       title: "Hint!",
       description: hintDescription,
-      duration: stage?.id === 'add-carry' ? 5000 : 3000,
+      duration: stage?.id === 'add-carry' ? 6000 : 3000,
     });
   };
 
@@ -353,7 +321,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
                     options={currentProblem.options}
                     onAnswerSelect={handleStage1Or2AnswerSelect}
                     onShowHint={handleShowHint}
-                    isAnswered={gameView === "answered" || (selectedAnswer !== null && selectedAnswer !== currentProblem.correctAnswer) }
+                    isAnswered={gameView === "answered"}
                     selectedAnswer={selectedAnswer}
                     correctAnswer={currentProblem.correctAnswer}
                     className="mt-auto"
@@ -396,3 +364,5 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     </div>
   );
 }
+
+    
