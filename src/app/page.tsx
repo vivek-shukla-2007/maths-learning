@@ -14,7 +14,6 @@ import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptiv
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Home, ThumbsUp, XCircle } from 'lucide-react';
 import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@/lib/constants';
-import { THEMES, DEFAULT_THEME_ID, type Theme } from '@/lib/themes'; // THEME Import
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
@@ -39,10 +38,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [aiTutorExplanation, setAiTutorExplanation] = useState<string>("");
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
 
-  const [selectedThemeId, setSelectedThemeId] = useState<string>(DEFAULT_THEME_ID); // THEME State
-  const currentTheme = THEMES.find(t => t.id === selectedThemeId) || THEMES[0]; // THEME Object
-
-  const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null); // ANIMATION State
+  const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
 
   const { toast } = useToast();
 
@@ -82,10 +78,6 @@ export default function PlaceValuePage(): React.JSX.Element {
     generateNewQuestion(maxNumberFromLevel);
   };
 
-  const handleThemeSelect = (themeId: string) => { // THEME Handler
-    setSelectedThemeId(themeId);
-  };
-
   const handleGoHome = () => {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
@@ -94,13 +86,12 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
 
   const proceedToNextStep = useCallback(() => {
-    if (questionsInBatch + 1 >= QUESTIONS_PER_BATCH) {
-      setGameStage("evaluatingAI");
+    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) {
+       setGameStage("evaluatingAI");
     } else {
-      setQuestionsInBatch(prev => prev + 1);
       generateNewQuestion(currentMaxNumber);
     }
-  }, [questionsInBatch, currentMaxNumber, generateNewQuestion]);
+  }, [score.total, currentMaxNumber, generateNewQuestion]);
 
   const handleAnswerSelect = (answer: number) => {
     setSelectedAnswer(answer); 
@@ -110,16 +101,20 @@ export default function PlaceValuePage(): React.JSX.Element {
     if (answer === targetNumber) {
       setScore(prev => ({ 
         correct: prev.correct + 1,
-        total: prev.total + 1
+        total: prev.total + 1 
       }));
-      setFeedbackAnimation({ type: 'correct', key: Date.now() }); // ANIMATION Trigger
+      setFeedbackAnimation({ type: 'correct', key: Date.now() });
       setGameStage("answered"); 
       setTimeout(() => {
         proceedToNextStep();
-      }, 1500); // Delay for feedback animation + progression
+      }, 1200); 
     } else {
-      setFeedbackAnimation({ type: 'incorrect', key: Date.now() }); // ANIMATION Trigger
-      // User stays on the same question. gameStage remains "playing".
+      setScore(prev => ({
+        ...prev,
+        total: prev.total +1 // Increment total for incorrect attempts as well to trigger AI tutor
+      }));
+      setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
+      // User stays on the same question, gameStage remains "playing".
     }
   };
   
@@ -133,7 +128,7 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   useEffect(() => {
     if (feedbackAnimation) {
-      const timer = setTimeout(() => setFeedbackAnimation(null), 1200); // ANIMATION Clear
+      const timer = setTimeout(() => setFeedbackAnimation(null), 1200);
       return () => clearTimeout(timer);
     }
   }, [feedbackAnimation]);
@@ -162,7 +157,7 @@ export default function PlaceValuePage(): React.JSX.Element {
           setQuestionsInBatch(0);
         } catch (error) {
           console.error("Error with AI Tutor:", error);
-          toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive" });
+          toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive", duration: 3000 });
           setScore({ correct: 0, total: 0 });
           setQuestionsInBatch(0);
           generateNewQuestion(currentMaxNumber); 
@@ -188,7 +183,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   }
 
   return (
-    <div className="w-full flex flex-col items-center space-y-6 py-6 relative"> {/* Added relative for feedback positioning */}
+    <div className="w-full flex flex-col items-center space-y-6 py-6 relative">
       <div className="w-full max-w-3xl flex justify-between items-start mb-4 px-2">
         {gameStage !== "levelSelection" ? (
            <ScoreDisplay correct={score.correct} total={score.total} />
@@ -205,9 +200,6 @@ export default function PlaceValuePage(): React.JSX.Element {
         <LevelSelector 
           onLevelSelect={handleLevelSelect} 
           disabled={isLoadingAI || gameStage === "evaluatingAI"}
-          themes={THEMES} // THEME Pass themes
-          selectedThemeId={selectedThemeId} // THEME Pass selected
-          onThemeSelect={handleThemeSelect} // THEME Pass handler
         />
       )}
 
@@ -220,8 +212,7 @@ export default function PlaceValuePage(): React.JSX.Element {
             <CardContent className="flex-grow"> 
               <BlockDisplay 
                 tens={tens} 
-                ones={ones} 
-                theme={currentTheme} // THEME Pass current theme
+                ones={ones}
               />
             </CardContent>
           </Card>
@@ -234,13 +225,12 @@ export default function PlaceValuePage(): React.JSX.Element {
               selectedAnswer={selectedAnswer}
               correctAnswer={targetNumber}
               className="mt-auto" 
-              disabled={gameStage === "answered" && selectedAnswer === targetNumber} // Disable controls when correct and waiting
+              disabled={gameStage === "answered" && selectedAnswer === targetNumber}
             />
           </div>
         </div>
       )}
 
-      {/* Feedback Animation Display */}
       {feedbackAnimation && (
         <div 
           key={feedbackAnimation.key} 

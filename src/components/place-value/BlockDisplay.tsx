@@ -3,20 +3,43 @@
 
 import Image from 'next/image';
 import type * as React from 'react';
-import type { Theme, ThemeBlockImage } from '@/lib/themes'; // THEME Import
 import { cn } from '@/lib/utils';
 
 interface BlockDisplayProps {
   tens: number;
   ones: number;
-  theme: Theme; // THEME Prop
 }
 
 const BLOCKS_PER_ROW_FOR_ONES = 3;
 
-export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JSX.Element {
+// Default block appearance
+const defaultOneBlock = {
+  basePlaceholderUrl: "https://placehold.co",
+  imageWidth: 35,
+  imageHeight: 35,
+  color: "FFD700", // Yellow
+  textColor: "FFD700", // Match to hide text
+  alt: "One block",
+  aiHint: "cube yellow",
+  groupClasses: "p-0.5 bg-accent/10 rounded shadow-md",
+};
+
+const defaultTenUnitBlock = {
+  basePlaceholderUrl: "https://placehold.co",
+  imageWidth: 30,
+  imageHeight: 30,
+  color: "3BA9D9", // Blue
+  textColor: "3BA9D9", // Match to hide text
+  alt: "Part of a ten stack",
+  aiHint: "cube blue",
+  groupClasses: "p-1 bg-primary/10 rounded shadow-md",
+};
+
+
+export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Element {
   
-  const getImageUrl = (blockConfig: ThemeBlockImage) => {
+  const getImageUrl = (blockConfig: typeof defaultOneBlock | typeof defaultTenUnitBlock) => {
+    // Adding a non-displaying text query parameter to try and force solid color
     return `${blockConfig.basePlaceholderUrl}/${blockConfig.imageWidth}x${blockConfig.imageHeight}/${blockConfig.color}/${blockConfig.textColor}.png?text=+`;
   };
 
@@ -26,15 +49,15 @@ export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JS
       const rowBlocks = [];
       for (let j = 0; j < BLOCKS_PER_ROW_FOR_ONES && (i + j) < ones; j++) {
         rowBlocks.push(
-          <div key={`one-${i + j}`} className={cn("rounded p-0.5 shadow-md", theme.onesGroupClasses)} data-ai-hint={theme.oneBlock.aiHint}>
+          <div key={`one-${i + j}`} className={cn("rounded", defaultOneBlock.groupClasses)} data-ai-hint={defaultOneBlock.aiHint}>
             <Image
-              src={getImageUrl(theme.oneBlock)}
-              alt={theme.oneBlock.alt}
-              width={theme.oneBlock.imageWidth}
-              height={theme.oneBlock.imageHeight}
+              src={getImageUrl(defaultOneBlock)}
+              alt={defaultOneBlock.alt}
+              width={defaultOneBlock.imageWidth}
+              height={defaultOneBlock.imageHeight}
               className="rounded"
-              data-ai-hint={theme.oneBlock.aiHint}
-              priority={i + j < BLOCKS_PER_ROW_FOR_ONES * 2} // Prioritize loading first few blocks
+              data-ai-hint={defaultOneBlock.aiHint}
+              priority={i + j < BLOCKS_PER_ROW_FOR_ONES * 2} 
             />
           </div>
         );
@@ -55,17 +78,17 @@ export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JS
         <div className="w-full">
           <div className="flex flex-wrap justify-center items-end gap-3">
             {Array.from({ length: tens }).map((_, tenIndex) => (
-              <div key={`ten-group-${tenIndex}`} className={cn("flex flex-col items-center gap-0.5", theme.tensGroupClasses)} data-ai-hint={theme.tenUnitBlock.aiHint + " stack"}>
+              <div key={`ten-group-${tenIndex}`} className={cn("flex flex-col items-center gap-0.5", defaultTenUnitBlock.groupClasses)} data-ai-hint={defaultTenUnitBlock.aiHint + " stack"}>
                 {Array.from({ length: 10 }).map((_, oneIndex) => (
                   <Image
                     key={`ten-${tenIndex}-one-${oneIndex}`}
-                    src={getImageUrl(theme.tenUnitBlock)}
-                    alt={theme.tenUnitBlock.alt}
-                    width={theme.tenUnitBlock.imageWidth}
-                    height={theme.tenUnitBlock.imageHeight}
+                    src={getImageUrl(defaultTenUnitBlock)}
+                    alt={defaultTenUnitBlock.alt}
+                    width={defaultTenUnitBlock.imageWidth}
+                    height={defaultTenUnitBlock.imageHeight}
                     className="rounded"
-                    data-ai-hint={theme.tenUnitBlock.aiHint}
-                    priority={tenIndex < 1 && oneIndex < 5} // Prioritize loading some ten-blocks
+                    data-ai-hint={defaultTenUnitBlock.aiHint}
+                    priority={tenIndex < 1 && oneIndex < 5} 
                   />
                 ))}
               </div>
@@ -80,7 +103,7 @@ export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JS
         </div>
       )}
        {(tens === 0 && ones === 0 && typeof window !== 'undefined') && (
-        <p className="text-muted-foreground">Select a level to see the {theme.name.toLowerCase()}!</p>
+        <p className="text-muted-foreground">Select a level to see the blocks!</p>
       )}
     </div>
   );
