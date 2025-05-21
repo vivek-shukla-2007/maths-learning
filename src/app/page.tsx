@@ -12,10 +12,12 @@ import { ScoreDisplay } from '@/components/place-value/ScoreDisplay';
 import { AITutorDialog } from '@/components/place-value/AITutorDialog';
 import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptive-tutoring';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Home } from 'lucide-react';
+import { Loader2, Home, ThumbsUp, XCircle } from 'lucide-react';
 import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@/lib/constants';
+import { THEMES, DEFAULT_THEME_ID, type Theme } from '@/lib/themes'; // THEME Import
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
+type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
 
 export default function PlaceValuePage(): React.JSX.Element {
   const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
@@ -36,6 +38,11 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   const [aiTutorExplanation, setAiTutorExplanation] = useState<string>("");
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
+
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(DEFAULT_THEME_ID); // THEME State
+  const currentTheme = THEMES.find(t => t.id === selectedThemeId) || THEMES[0]; // THEME Object
+
+  const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null); // ANIMATION State
 
   const { toast } = useToast();
 
@@ -75,6 +82,10 @@ export default function PlaceValuePage(): React.JSX.Element {
     generateNewQuestion(maxNumberFromLevel);
   };
 
+  const handleThemeSelect = (themeId: string) => { // THEME Handler
+    setSelectedThemeId(themeId);
+  };
+
   const handleGoHome = () => {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
@@ -83,9 +94,6 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
 
   const proceedToNextStep = useCallback(() => {
-    // Increment total score only when a correct answer leads to progression
-    // setScore(prev => ({ ...prev, total: prev.total + 1 })); 
-
     if (questionsInBatch + 1 >= QUESTIONS_PER_BATCH) {
       setGameStage("evaluatingAI");
     } else {
@@ -102,26 +110,33 @@ export default function PlaceValuePage(): React.JSX.Element {
     if (answer === targetNumber) {
       setScore(prev => ({ 
         correct: prev.correct + 1,
-        total: prev.total + 1 // Increment total score on correct answer progression
+        total: prev.total + 1
       }));
+      setFeedbackAnimation({ type: 'correct', key: Date.now() }); // ANIMATION Trigger
       setGameStage("answered"); 
       setTimeout(() => {
         proceedToNextStep();
-      }, 1000); // 1 second delay before moving to next question
+      }, 1500); // Delay for feedback animation + progression
     } else {
+      setFeedbackAnimation({ type: 'incorrect', key: Date.now() }); // ANIMATION Trigger
       // User stays on the same question. gameStage remains "playing".
-      // selectedAnswer is set, so the button will be red.
-      // Score 'total' is not incremented here for incorrect attempts on the same question.
     }
   };
   
   const handleShowHint = () => {
     toast({
       title: "Hint!",
-      description: `Try counting the blue (tens) and yellow (ones) blocks carefully! Each blue stack is 10.`,
+      description: `Try counting the tens and ones blocks carefully!`,
       duration: 2000, 
     });
   };
+
+  useEffect(() => {
+    if (feedbackAnimation) {
+      const timer = setTimeout(() => setFeedbackAnimation(null), 1200); // ANIMATION Clear
+      return () => clearTimeout(timer);
+    }
+  }, [feedbackAnimation]);
 
 
   useEffect(() => {
@@ -173,7 +188,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   }
 
   return (
-    <div className="w-full flex flex-col items-center space-y-6 py-6">
+    <div className="w-full flex flex-col items-center space-y-6 py-6 relative"> {/* Added relative for feedback positioning */}
       <div className="w-full max-w-3xl flex justify-between items-start mb-4 px-2">
         {gameStage !== "levelSelection" ? (
            <ScoreDisplay correct={score.correct} total={score.total} />
@@ -187,7 +202,13 @@ export default function PlaceValuePage(): React.JSX.Element {
       </div>
 
       {gameStage === "levelSelection" && (
-        <LevelSelector onLevelSelect={handleLevelSelect} disabled={isLoadingAI || gameStage === "evaluatingAI"} />
+        <LevelSelector 
+          onLevelSelect={handleLevelSelect} 
+          disabled={isLoadingAI || gameStage === "evaluatingAI"}
+          themes={THEMES} // THEME Pass themes
+          selectedThemeId={selectedThemeId} // THEME Pass selected
+          onThemeSelect={handleThemeSelect} // THEME Pass handler
+        />
       )}
 
       {(gameStage === "playing" || gameStage === "answered") && (
@@ -197,7 +218,11 @@ export default function PlaceValuePage(): React.JSX.Element {
               <CardTitle className="text-3xl text-center text-primary">Count the Blocks!</CardTitle>
             </CardHeader>
             <CardContent className="flex-grow"> 
-              <BlockDisplay tens={tens} ones={ones} />
+              <BlockDisplay 
+                tens={tens} 
+                ones={ones} 
+                theme={currentTheme} // THEME Pass current theme
+              />
             </CardContent>
           </Card>
           <div className="flex flex-col h-full pt-2 md:pt-0"> 
@@ -209,7 +234,27 @@ export default function PlaceValuePage(): React.JSX.Element {
               selectedAnswer={selectedAnswer}
               correctAnswer={targetNumber}
               className="mt-auto" 
+              disabled={gameStage === "answered" && selectedAnswer === targetNumber} // Disable controls when correct and waiting
             />
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Animation Display */}
+      {feedbackAnimation && (
+        <div 
+          key={feedbackAnimation.key} 
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+        >
+          <div className={`p-8 rounded-full shadow-2xl 
+            ${feedbackAnimation.type === 'correct' ? 'bg-green-500/80' : 'bg-red-500/80'} 
+            animate-scale-up-pop`}
+          >
+            {feedbackAnimation.type === 'correct' ? (
+              <ThumbsUp className="h-24 w-24 text-white" />
+            ) : (
+              <XCircle className="h-24 w-24 text-white" />
+            )}
           </div>
         </div>
       )}

@@ -11,10 +11,11 @@ interface QuizControlsProps {
   options: number[];
   onAnswerSelect: (answer: number) => void;
   onShowHint: () => void;
-  isAnswered: boolean; // True if gameStage is "answered" (correct answer given, before auto-advance)
+  isAnswered: boolean; 
   selectedAnswer: number | null;
   correctAnswer: number | null;
   className?: string;
+  disabled?: boolean; // New prop to disable all controls
 }
 
 export function QuizControls({
@@ -25,15 +26,15 @@ export function QuizControls({
   selectedAnswer,
   correctAnswer,
   className,
+  disabled = false, // Default to false
 }: QuizControlsProps): React.JSX.Element {
   
   const getButtonVariant = (option: number) => {
     if (selectedAnswer === null) return "outline"; 
-    // If an answer is selected (correct or incorrect)
     if (selectedAnswer === option) {
-      return option === correctAnswer ? "default" : "destructive"; // Green if correct, Red if incorrect
+      return option === correctAnswer ? "default" : "destructive";
     }
-    return "outline"; // Default for other unselected options
+    return "outline"; 
   };
 
   const getButtonIcon = (option: number) => {
@@ -55,8 +56,7 @@ export function QuizControls({
               size="lg"
               className="text-lg h-16"
               onClick={() => onAnswerSelect(option)}
-              // Buttons are disabled if the question has been correctly answered and awaiting auto-advance
-              disabled={isAnswered && selectedAnswer === correctAnswer} 
+              disabled={disabled || (isAnswered && selectedAnswer === correctAnswer && option === correctAnswer)} // Disable if overall disabled or if it's the correctly answered button
             >
               {getButtonIcon(option)}
               {option}
@@ -64,16 +64,15 @@ export function QuizControls({
           ))}
         </div>
         
-        <div className="flex justify-center items-center pt-2"> {/* Centered hint button */}
+        <div className="flex justify-center items-center pt-2">
           <Button 
             variant="ghost" 
             onClick={onShowHint} 
-            disabled={isAnswered && selectedAnswer === correctAnswer} // Disable hint if question is correctly answered
+            disabled={disabled || (isAnswered && selectedAnswer === correctAnswer)}
             className="text-accent-foreground hover:text-accent"
           >
             <Lightbulb className="mr-2 h-5 w-5" /> Hint
           </Button>
-          {/* "Next Question" button removed as progression is automatic */}
         </div>
       </CardContent>
     </Card>

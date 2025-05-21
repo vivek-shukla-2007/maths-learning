@@ -3,35 +3,37 @@
 
 import Image from 'next/image';
 import type * as React from 'react';
+import type { Theme } from '@/lib/themes'; // THEME Import
+import { cn } from '@/lib/utils';
 
 interface BlockDisplayProps {
   tens: number;
   ones: number;
+  theme: Theme; // THEME Prop
 }
-
-const TENS_BLOCK_COLOR_BG = "3BA9D9"; 
-const ONES_BLOCK_COLOR_BG = "FFD700"; 
-const TENS_BLOCK_COLOR_FG = TENS_BLOCK_COLOR_BG;
-const ONES_BLOCK_COLOR_FG = ONES_BLOCK_COLOR_BG;
 
 const BLOCKS_PER_ROW_FOR_ONES = 3;
 
-export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Element {
+export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JSX.Element {
   
+  const getImageUrl = (blockConfig: Theme['oneBlock'] | Theme['tenUnitBlock']) => {
+    return `${blockConfig.basePlaceholderUrl}/${blockConfig.color}/${blockConfig.textColor}.png`;
+  };
+
   const renderOneBlocks = () => {
     const rows = [];
     for (let i = 0; i < ones; i += BLOCKS_PER_ROW_FOR_ONES) {
       const rowBlocks = [];
       for (let j = 0; j < BLOCKS_PER_ROW_FOR_ONES && (i + j) < ones; j++) {
         rowBlocks.push(
-          <div key={`one-${i + j}`} className="bg-accent/20 rounded p-0.5 shadow-md" data-ai-hint="ones unit">
+          <div key={`one-${i + j}`} className={cn("rounded p-0.5 shadow-md", theme.onesGroupClasses)} data-ai-hint={theme.oneBlock.aiHint}>
             <Image
-              src={`https://placehold.co/25x25/${ONES_BLOCK_COLOR_BG}/${ONES_BLOCK_COLOR_FG}.png`}
-              alt="One block cube (yellow)"
-              width={25}
-              height={25}
+              src={getImageUrl(theme.oneBlock)}
+              alt={theme.oneBlock.alt}
+              width={35}
+              height={35}
               className="rounded"
-              data-ai-hint="cube one"
+              data-ai-hint={theme.oneBlock.aiHint}
             />
           </div>
         );
@@ -46,22 +48,22 @@ export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Eleme
   };
 
   return (
-    <div className="my-6 p-4 bg-secondary/30 rounded-lg shadow-inner min-h-[350px] flex flex-col items-center justify-center space-y-4">
+    <div className="my-4 p-4 bg-secondary/20 rounded-lg shadow-inner min-h-[350px] flex flex-col items-center justify-center space-y-4 overflow-hidden">
       {/* Tens display */}
       {tens > 0 && (
         <div className="w-full">
           <div className="flex flex-wrap justify-center items-end gap-3">
             {Array.from({ length: tens }).map((_, tenIndex) => (
-              <div key={`ten-group-${tenIndex}`} className="flex flex-col items-center gap-0.5 p-1 bg-primary/20 rounded shadow-md" data-ai-hint="tens stack">
+              <div key={`ten-group-${tenIndex}`} className={cn("flex flex-col items-center gap-0.5", theme.tensGroupClasses)} data-ai-hint={theme.tenUnitBlock.aiHint + " stack"}>
                 {Array.from({ length: 10 }).map((_, oneIndex) => (
                   <Image
                     key={`ten-${tenIndex}-one-${oneIndex}`}
-                    src={`https://placehold.co/25x25/${TENS_BLOCK_COLOR_BG}/${TENS_BLOCK_COLOR_FG}.png`}
-                    alt="Part of a ten block stack (blue)"
-                    width={25}
-                    height={25}
+                    src={getImageUrl(theme.tenUnitBlock)}
+                    alt={theme.tenUnitBlock.alt}
+                    width={30} 
+                    height={30}
                     className="rounded"
-                    data-ai-hint="cube ten" 
+                    data-ai-hint={theme.tenUnitBlock.aiHint}
                   />
                 ))}
               </div>
@@ -71,12 +73,12 @@ export function BlockDisplay({ tens, ones }: BlockDisplayProps): React.JSX.Eleme
       )}
       {/* Ones display */}
       {ones > 0 && (
-        <div className="w-full mt-2">
+        <div className="w-full mt-3">
           {renderOneBlocks()}
         </div>
       )}
        {(tens === 0 && ones === 0 && typeof window !== 'undefined') && (
-        <p className="text-muted-foreground">Select a level to see the blocks!</p>
+        <p className="text-muted-foreground">Select a level to see the {theme.name.toLowerCase()}!</p>
       )}
     </div>
   );
