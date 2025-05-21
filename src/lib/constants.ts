@@ -22,30 +22,30 @@ export interface AdditionStage {
   id: string;
   name: string;
   minOperandValue: number;
-  maxOperandValue: number;
+  maxOperandValue: number; // For Stage 2, this will be 10. Problem generation will handle the "10+9" rule.
   description?: string;
 }
 
 export const ADDITION_STAGES: AdditionStage[] = [
-  { 
-    id: 'add-visual', 
-    name: 'Stage 1: Visual Counting (1-9)', 
-    minOperandValue: 1, 
-    maxOperandValue: 9,
-    description: 'Count the stars to find the sum!' 
+  {
+    id: 'add-visual',
+    name: 'Stage 1: Visual Counting (1-9)',
+    minOperandValue: 1,
+    maxOperandValue: 9, // Max value for each operand here
+    description: 'Count the stars to find the sum!'
   },
-  { 
-    id: 'add-numbers', 
-    name: 'Stage 2: Numbers Only (1-20)', 
-    minOperandValue: 1, 
-    maxOperandValue: 20,
-    description: 'Add the numbers together.' 
+  {
+    id: 'add-numbers',
+    name: 'Stage 2: Numbers Only (Sums up to 19)',
+    minOperandValue: 0, // Can be 0 for problems like 0+5
+    maxOperandValue: 10, // Max value for a single operand
+    description: 'Add the numbers together.'
   },
-  { 
-    id: 'add-carry', 
-    name: 'Stage 3: Column Addition (Carry)', 
-    minOperandValue: 1, // For the smaller number
-    maxOperandValue: 20, // For one of the numbers (e.g. up to 20 + 9)
-    description: 'Practice addition with carrying.' 
+  {
+    id: 'add-carry',
+    name: 'Stage 3: Column Addition (Carry)',
+    minOperandValue: 1,
+    maxOperandValue: 20, // Max value for one of the operands, ensuring sums are manageable
+    description: 'Practice addition with carrying.'
   },
 ];

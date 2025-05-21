@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScoreDisplay } from '@/components/place-value/ScoreDisplay'; // Re-using for now
-import { AITutorDialog } from '@/components/place-value/AITutorDialog'; // Re-using for now
+// import { AITutorDialog } from '@/components/place-value/AITutorDialog'; // Re-using for now
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid, Star, Minus, Plus } from 'lucide-react';
 import { ADDITION_STAGES, QUESTIONS_PER_BATCH } from '@/lib/constants';
@@ -33,13 +33,13 @@ interface AdditionProblem {
 export default function AdditionAdventurePage(): React.JSX.Element {
   const [gameView, setGameView] = useState<GameView>("stageSelection");
   const [currentStageId, setCurrentStageId] = useState<string>(ADDITION_STAGES[0].id);
-  
+
   const [currentProblem, setCurrentProblem] = useState<AdditionProblem | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  
+
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
-  
-  const [aiTutorExplanation, setAiTutorExplanation] = useState<string>("");
+
+  // const [aiTutorExplanation, setAiTutorExplanation] = useState<string>("");
   const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
 
   const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
@@ -48,18 +48,28 @@ export default function AdditionAdventurePage(): React.JSX.Element {
 
   const generateProblemOptions = useCallback((correctNum: number, maxNumInRange: number): number[] => {
     const incorrectOptions = new Set<number>();
-    const range = Math.max(10, correctNum + 5); // Ensure options are somewhat close or within a reasonable range
+    // Ensure options are somewhat close or within a reasonable range for addition
+    const rangeForOptions = Math.max(10, correctNum + 5);
 
     while (incorrectOptions.size < 3) {
-      // Generate options closer to the correct answer
-      let potentialOption = correctNum + (Math.floor(Math.random() * 10) - 5); // -5 to +4 offset
-      if (potentialOption < 0) potentialOption = Math.floor(Math.random() * range); // fallback for negative results
+      let potentialOption;
+      const offsetDirection = Math.random() < 0.5 ? -1 : 1;
+      const smallOffset = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
+      const largerOffset = Math.floor(Math.random() * 5) + 1; // 1 to 5
+
+      if (Math.random() < 0.7) { // 70% chance for closer options
+        potentialOption = correctNum + (offsetDirection * smallOffset);
+      } else { // 30% chance for slightly wider options or completely random within range
+        if (Math.random() < 0.5) {
+            potentialOption = correctNum + (offsetDirection * largerOffset);
+        } else {
+            potentialOption = Math.floor(Math.random() * (maxNumInRange + 1)); // 0 to maxNumInRange
+        }
+      }
       
-      if (potentialOption !== correctNum && potentialOption >= 0) {
+      // Ensure option is valid and not the correct answer
+      if (potentialOption !== correctNum && potentialOption >= 0 && potentialOption <= maxNumInRange + 5) { // Allow slightly above max range for variety
         incorrectOptions.add(potentialOption);
-      } else { // Add more random options if needed
-         const randomOption = Math.floor(Math.random() * (maxNumInRange + 5));
-         if (randomOption !== correctNum) incorrectOptions.add(randomOption);
       }
     }
     const allOptions = [correctNum, ...Array.from(incorrectOptions)];
@@ -74,19 +84,53 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     let num1 = 0;
     let num2 = 0;
 
-    if (stage.id === 'add-visual' || stage.id === 'add-numbers') {
+    if (stage.id === 'add-visual') {
       num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
       num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+       // Ensure sum is not too large for very young learners, e.g., sum <= 10 for visual stage.
+      while (num1 + num2 > 10) { // Adjust if necessary for very early visual stage
+        num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+        num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+      }
+    } else if (stage.id === 'add-numbers') {
+      num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+      num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+      // Rule: If one number is 10, the other can be max 9. Max operand is 10.
+      if (num1 === 10) {
+        num2 = Math.floor(Math.random() * 10); // 0-9
+      } else if (num2 === 10) {
+        num1 = Math.floor(Math.random() * 10); // 0-9
+      }
+      // Ensure sum is max 19
+       while (num1 + num2 > 19) {
+        num1 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+        num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
+        if (num1 === 10) num2 = Math.floor(Math.random() * 10);
+        else if (num2 === 10) num1 = Math.floor(Math.random() * 10);
+       }
+
     } else if (stage.id === 'add-carry') {
-      // Ensure one number is at least 10 for potential carry, or make them larger
-       num1 = Math.floor(Math.random() * (stage.maxOperandValue - 10 + 1)) + 10; // e.g. 10-20
-       num2 = Math.floor(Math.random() * (10 - stage.minOperandValue + 1)) + stage.minOperandValue; // e.g. 1-9
+       // Ensure one number might cause a carry, or both are single digit summing > 9, or one 2-digit.
+       // Example: 6+5, 8+7, 13+4, 8+15
+       // Max sum around 30-40 for simplicity for now.
+       const typeOfProblem = Math.random();
+       if (typeOfProblem < 0.4) { // Two single digits that carry
+           num1 = Math.floor(Math.random() * 5) + 5; // 5-9
+           num2 = Math.floor(Math.random() * (10 - num1)) + (10 - num1); // Ensure sum is >= 10, e.g. if num1 is 5, num2 is 5-9
+           if (num1 + num2 < 10) num2 = 10 - num1 + Math.floor(Math.random()* (9 - (10-num1) +1)); // ensure sum is at least 10
+       } else if (typeOfProblem < 0.8) { // One 2-digit, one 1-digit
+           num1 = Math.floor(Math.random() * 11) + 10; // 10-20
+           num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
+       } else { // Two 1-digit numbers that don't necessarily carry (for variety)
+           num1 = Math.floor(Math.random() * 9) + 1; // 1-9
+           num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+       }
        if (Math.random() > 0.5) [num1, num2] = [num2, num1]; // Swap sometimes
     }
 
 
     const correctAnswer = num1 + num2;
-    const maxPossibleSum = stage.maxOperandValue * 2; // Estimate for option generation range
+    const maxPossibleSum = stage.id === 'add-visual' ? 10 : (stage.id === 'add-numbers' ? 19 : 39); // Estimate for option generation range
     const options = generateProblemOptions(correctAnswer, maxPossibleSum);
 
     setCurrentProblem({ num1, num2, correctAnswer, options, type: 'addition' });
@@ -96,6 +140,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
 
   const handleStageSelect = (stageId: string) => {
     setCurrentStageId(stageId);
+    setScore({ correct: 0, total: 0 });
     generateNewProblem(stageId);
   };
 
@@ -107,7 +152,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
 
   const proceedToNextStep = useCallback(() => {
     // For now, AI evaluation is disabled, can be re-added later
-    // if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) { 
+    // if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) {
     //    setGameView("evaluatingAI");
     // } else {
       generateNewProblem(currentStageId);
@@ -116,48 +161,46 @@ export default function AdditionAdventurePage(): React.JSX.Element {
 
   const handleAnswerSelect = (answer: number) => {
     if (!currentProblem) return;
-    setSelectedAnswer(answer); 
-    
+    setSelectedAnswer(answer);
+
     if (answer === currentProblem.correctAnswer) {
-      setScore(prev => ({ 
+      setScore(prev => ({
         correct: prev.correct + 1,
-        total: prev.total + 1 
+        total: prev.total + 1
       }));
       setFeedbackAnimation({ type: 'correct', key: Date.now() });
-      setGameView("answered"); 
+      setGameView("answered");
       setTimeout(() => {
         proceedToNextStep();
-        setFeedbackAnimation(null); 
-      }, 1200); 
+        setFeedbackAnimation(null);
+      }, 1200);
     } else {
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
-      // Keep gameView as "playing" to allow another attempt without revealing answer
       // Score total does not increment on wrong answer first try
        setTimeout(() => {
         setFeedbackAnimation(null);
-        // If you want the user to re-attempt the same question after a wrong answer,
-        // you might not want to clear selectedAnswer or change gameView here.
-        // For now, it just shows feedback and allows another pick.
-      }, 1200); 
+        // User stays on the same question, selectedAnswer remains the incorrect one
+        // The UI in AnswerOptions will show it as destructive
+      }, 1200);
     }
   };
-  
+
   const handleShowHint = () => {
     if (!currentProblem) return;
     const stage = ADDITION_STAGES.find(s => s.id === currentStageId);
     let hintDescription = "Try counting carefully!";
     if (stage?.id === 'add-visual') {
-      hintDescription = `Count the ${currentProblem.num1} stars and then the ${currentProblem.num2} stars.`;
+      hintDescription = `Count the first group of stars and then the second group.`;
     } else if (stage?.id === 'add-numbers') {
       hintDescription = `What is ${currentProblem.num1} plus ${currentProblem.num2}?`;
     } else if (stage?.id === 'add-carry') {
-       hintDescription = `Add the ones column first. Then add the tens column, including any carry.`;
+       hintDescription = `Add the ones column first. Remember to carry over if the sum is 10 or more. Then add the tens column.`;
     }
 
     toast({
       title: "Hint!",
       description: hintDescription,
-      duration: 3000, 
+      duration: 3000,
     });
   };
 
@@ -172,9 +215,9 @@ export default function AdditionAdventurePage(): React.JSX.Element {
   //   }
   // }, [gameView, currentStageId, score, toast, generateNewProblem]);
 
-  const handleAIClose = () => { // Placeholder
-    generateNewProblem(currentStageId);
-  };
+  // const handleAIClose = () => { // Placeholder
+  //   generateNewProblem(currentStageId);
+  // };
 
   useEffect(() => {
     document.title = 'Addition Adventure';
@@ -192,7 +235,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
   return (
     <div className="w-full flex flex-col items-center space-y-6 py-6 relative">
       <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2">
-        <div className="flex-1"> 
+        <div className="flex-1">
           {gameView !== "stageSelection" && currentProblem && (
             <ScoreDisplay correct={score.correct} total={score.total} />
           )}
@@ -212,9 +255,9 @@ export default function AdditionAdventurePage(): React.JSX.Element {
       </div>
 
       {gameView === "stageSelection" && (
-        <StageSelector 
+        <StageSelector
           stages={ADDITION_STAGES}
-          onStageSelect={handleStageSelect} 
+          onStageSelect={handleStageSelect}
           disabled={isLoadingAI /* || gameView === "evaluatingAI" */}
         />
       )}
@@ -227,23 +270,23 @@ export default function AdditionAdventurePage(): React.JSX.Element {
                 Solve!
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center"> 
-              <ProblemDisplay 
+            <CardContent className="flex-grow flex items-center justify-center">
+              <ProblemDisplay
                 problem={currentProblem}
                 stageId={currentStageId}
               />
             </CardContent>
           </Card>
-          <div className="flex flex-col h-full pt-2 md:pt-0"> 
+          <div className="flex flex-col h-full pt-2 md:pt-0">
             {currentProblem.options.length > 0 && (
                 <AnswerOptions
                     options={currentProblem.options}
                     onAnswerSelect={handleAnswerSelect}
                     onShowHint={handleShowHint}
-                    isAnswered={gameView === "answered"}
+                    isAnswered={gameView === "answered" || (selectedAnswer !== null && selectedAnswer !== currentProblem.correctAnswer) }
                     selectedAnswer={selectedAnswer}
                     correctAnswer={currentProblem.correctAnswer}
-                    className="mt-auto" 
+                    className="mt-auto"
                     disabled={gameView === "answered" && selectedAnswer === currentProblem.correctAnswer}
                 />
             )}
@@ -252,12 +295,12 @@ export default function AdditionAdventurePage(): React.JSX.Element {
       )}
 
       {feedbackAnimation && (
-        <div 
-          key={feedbackAnimation.key} 
+        <div
+          key={feedbackAnimation.key}
           className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
         >
-          <div className={`p-8 rounded-full shadow-2xl 
-            ${feedbackAnimation.type === 'correct' ? 'bg-green-500/80' : 'bg-red-500/80'} 
+          <div className={`p-8 rounded-full shadow-2xl
+            ${feedbackAnimation.type === 'correct' ? 'bg-green-500/80' : 'bg-red-500/80'}
             animate-scale-up-pop`}
           >
             {feedbackAnimation.type === 'correct' ? (
