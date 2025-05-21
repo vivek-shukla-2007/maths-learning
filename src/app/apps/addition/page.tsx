@@ -13,7 +13,7 @@ import { ADDITION_STAGES } from '@/lib/constants';
 import { StageSelector } from '@/components/addition/StageSelector';
 import { ProblemDisplay } from '@/components/addition/ProblemDisplay';
 import { AnswerOptions } from '@/components/addition/AnswerOptions';
-import { NumpadInput } from '@/components/addition/NumpadInput'; // New component
+import { NumpadInput } from '@/components/addition/NumpadInput';
 
 type GameView = "stageSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
@@ -22,7 +22,7 @@ interface AdditionProblem {
   num1: number;
   num2: number;
   correctAnswer: number;
-  options: number[]; // Still used for stages 1 & 2, and for correct answer in stage 3
+  options: number[];
   type: 'addition';
 }
 
@@ -31,8 +31,8 @@ export default function AdditionAdventurePage(): React.JSX.Element {
   const [currentStageId, setCurrentStageId] = useState<string>(ADDITION_STAGES[0].id);
 
   const [currentProblem, setCurrentProblem] = useState<AdditionProblem | null>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null); // For stages 1 & 2
-  const [stage3AnswerDigits, setStage3AnswerDigits] = useState<[string, string]>(['', '']); // For stage 3
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [stage3AnswerDigits, setStage3AnswerDigits] = useState<[string, string]>(['', '']); // [tens, ones]
 
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
 
@@ -83,14 +83,14 @@ export default function AdditionAdventurePage(): React.JSX.Element {
         num2 = Math.floor(Math.random() * (stage.maxOperandValue - stage.minOperandValue + 1)) + stage.minOperandValue;
       }
     } else if (stage.id === 'add-numbers') {
-      num1 = Math.floor(Math.random() * (stage.maxOperandValue + 1)); // 0 to maxOperandValue
-      num2 = Math.floor(Math.random() * (stage.maxOperandValue + 1)); // 0 to maxOperandValue
+      num1 = Math.floor(Math.random() * (stage.maxOperandValue + 1)); 
+      num2 = Math.floor(Math.random() * (stage.maxOperandValue + 1)); 
       if (num1 === 10) {
         num2 = Math.floor(Math.random() * 10); // 0-9
       } else if (num2 === 10) {
         num1 = Math.floor(Math.random() * 10); // 0-9
       }
-       while (num1 + num2 > 19) { // Ensure sum is max 19
+       while (num1 + num2 > 19) { 
         num1 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
         num2 = Math.floor(Math.random() * (stage.maxOperandValue + 1));
         if (num1 === 10) num2 = Math.floor(Math.random() * 10);
@@ -98,18 +98,25 @@ export default function AdditionAdventurePage(): React.JSX.Element {
        }
     } else if (stage.id === 'add-carry') {
        const typeOfProblem = Math.random();
-       if (typeOfProblem < 0.4) { 
+       if (typeOfProblem < 0.3) { // Single digit + single digit (results in carry)
            num1 = Math.floor(Math.random() * 5) + 5; // 5-9
            num2 = Math.floor(Math.random() * (9 - (10 - num1) +1)) + (10 - num1); 
            if (num1 + num2 < 10) num2 = 10 - num1 + Math.floor(Math.random()* (9 - (10-num1) +1));
-       } else if (typeOfProblem < 0.8) { 
+       } else if (typeOfProblem < 0.7) { // Double digit + single digit
            num1 = Math.floor(Math.random() * 11) + 10; // 10-20
            num2 = Math.floor(Math.random() * 9) + 1;   // 1-9
-       } else { 
-           num1 = Math.floor(Math.random() * 9) + 1; // 1-9
-           num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+           if (Math.random() > 0.5) [num1, num2] = [num2, num1]; // Swap to allow single + double
+       } else { // Double digit + double digit (simple, sum < 40 for now, may or may not carry)
+           num1 = Math.floor(Math.random() * 10) + 10; //10-19
+           num2 = Math.floor(Math.random() * 10) + 10; //10-19
+           if (num1 + num2 > 39) { // limit sum to 39
+             if (num1 > num2) num1 = 39 - num2 - (Math.floor(Math.random()*5));
+             else num2 = 39 - num1 - (Math.floor(Math.random()*5));
+           }
        }
-       if (Math.random() > 0.5) [num1, num2] = [num2, num1]; 
+       // Ensure num1 is not smaller than num2 if it makes carry awkward, or just ensure num1 is generally larger if double digit.
+       if (num1 < 10 && num2 >=10 && num2 > num1) [num1, num2] = [num2, num1];
+       else if (num1 >= 10 && num2 >= 10 && num2 > num1) [num1, num2] = [num2, num1]; // Keep larger number on top for conventional display
     }
 
     const correctAnswer = num1 + num2;
@@ -152,17 +159,16 @@ export default function AdditionAdventurePage(): React.JSX.Element {
       }, 1200);
     } else {
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
-      setScore(prev => ({ // Increment total on incorrect for Stage 3, as it's a direct attempt
+      setScore(prev => ({ 
         correct: prev.correct,
         total: currentStageId === 'add-carry' ? prev.total + 1 : prev.total 
       }));
       setTimeout(() => {
         setFeedbackAnimation(null);
         if (currentStageId === 'add-carry') {
-          setStage3AnswerDigits(['', '']); // Clear input for Stage 3 on incorrect
-          setGameView("playing"); // Allow re-attempt on same problem
+          setStage3AnswerDigits(['', '']); 
+          setGameView("playing"); 
         }
-        // For stages 1 & 2, user stays on same problem, incorrect option highlighted
       }, 1200);
     }
   };
@@ -170,13 +176,17 @@ export default function AdditionAdventurePage(): React.JSX.Element {
   const handleStage1Or2AnswerSelect = (answer: number) => {
     if (!currentProblem) return;
     setSelectedAnswer(answer);
+    setScore(prev => ({ // Increment total for stages 1 & 2 here, as selection is an attempt
+        correct: prev.correct,
+        total: prev.total + 1
+      }));
     handleAnswerSubmission(answer === currentProblem.correctAnswer);
   };
   
   const handleStage3DigitPress = (digit: string) => {
-    setStage3AnswerDigits(prev => {
-      if (prev[0] === '') return [digit, ''];
-      if (prev[1] === '') return [prev[0], digit];
+    setStage3AnswerDigits(prev => { // prev is [tens, ones]
+      if (prev[1] === '') return [prev[0], digit]; // Fill ones place first
+      if (prev[0] === '') return [digit, prev[1]]; // Then fill tens place
       return prev; // Both full, ignore
     });
   };
@@ -187,10 +197,14 @@ export default function AdditionAdventurePage(): React.JSX.Element {
 
   const handleStage3SubmitPress = () => {
     if (!currentProblem) return;
-    const enteredAnswerStr = stage3AnswerDigits.join('');
-    if (enteredAnswerStr.length === 0) return; // Or perhaps check for 2 digits
+    // Ensure both digits are filled if problem implies a two-digit answer, or at least ones digit is filled.
+    // For simplicity now, allow submission if at least one digit is entered.
+    const enteredAnswerStr = stage3AnswerDigits[0] + stage3AnswerDigits[1];
+    if (enteredAnswerStr.length === 0 && stage3AnswerDigits[1] === '') return; 
     
     const enteredAnswerNum = parseInt(enteredAnswerStr, 10);
+    if (isNaN(enteredAnswerNum)) return; // Handle case where only tens digit was entered, then cleared, etc.
+
     handleAnswerSubmission(enteredAnswerNum === currentProblem.correctAnswer);
   };
 
@@ -199,8 +213,8 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     if (!currentProblem) return;
     const stage = ADDITION_STAGES.find(s => s.id === currentStageId);
     let hintDescription = "Try counting carefully!";
-    if (stage?.id === 'add-visual') { // This button is now hidden for add-visual
-      hintDescription = `Count the first group of stars and then the second group.`;
+    if (stage?.id === 'add-visual') { 
+      // Hint button is hidden for this stage via AnswerOptions component
     } else if (stage?.id === 'add-numbers') {
       hintDescription = `What is ${currentProblem.num1} plus ${currentProblem.num2}?`;
     } else if (stage?.id === 'add-carry') {
@@ -320,3 +334,4 @@ export default function AdditionAdventurePage(): React.JSX.Element {
     </div>
   );
 }
+
