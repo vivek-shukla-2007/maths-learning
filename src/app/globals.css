@@ -125,12 +125,13 @@
  /* Styles for Column Addition in ProblemDisplay.tsx */
   .addition-column-display {
     display: grid;
-    grid-template-rows: auto auto auto auto auto; /* Carry(optional), Num1, Operator+Num2, Line, Result */
+    /* Rows: Carry, Num1, Operator+Num2, Line, Result */
+    grid-template-rows: auto auto auto auto auto; 
     justify-items: end; /* Aligns items to the right of their grid cell */
-    gap: 0.25rem; /* Reduced gap */
+    gap: 0.1rem; /* Very small gap between rows */
     width: fit-content; /* Adjusts to content size */
     margin: 0 auto; /* Centers the block */
-    font-size: 1.5rem; /* Base font size for this block, can be overridden by text-.. classes */
+    font-size: 1.5rem; /* Base font size */
   }
 
   @media (min-width: 640px) { /* sm breakpoint */
@@ -144,16 +145,16 @@
     }
   }
 
-
   .addition-column-display .carry-row {
-    grid-column: 1 / -1; /* Span all columns for the carry */
-    display: grid; /* Use grid for alignment */
-    grid-template-columns: repeat(2, minmax(0, 1fr)); /* Two columns for tens and ones carry spots */
-    gap: 0.25rem; /* Gap between carry boxes if two are shown, or align with PaddedNumber */
-    justify-items: end;
-    padding-right: 0; /* Padding handled by PaddedNumber or DigitDisplayBox */
-    min-height: 2rem; /* Space for carry */
-    width: 100%; /* Ensure it spans */
+    grid-column: 1 / -1; /* Span all columns defined by content below */
+    display: grid; 
+    /* This grid should align with PaddedNumber's internal grid.
+       PaddedNumber has 2 columns (tens, ones). Carry box goes above tens. */
+    grid-template-columns: repeat(2, minmax(0, auto)); /* Two columns for tens and ones positions */
+    justify-items: center; /* Center carry box in its designated column cell */
+    width: 100%; /* Ensure it uses the width determined by numbers below */
+    min-height: 2.5rem; /* Ensure space for carry box, adjust as needed */
+    position: relative; /* For fine-tuning if needed */
   }
   
   .addition-column-display .operand-row {
@@ -163,27 +164,28 @@
 
   .addition-column-display .operator-operand-row {
     grid-column: 1 / -1;
-    display: flex;
+    display: flex; /* Use flex to align operator and PaddedNumber */
     justify-content: flex-end; 
     align-items: center;
-    width: 100%;
+    width: 100%; /* Ensure full width to align with PaddedNumbers */
   }
   
   .addition-column-display .operator-operand-row .operator {
-     margin-right: 0.5em; 
+     margin-right: 0.25em; /* Space between operator and number */
   }
   
   .addition-column-display .line {
     grid-column: 1 / -1;
     height: 2px;
     width: 100%; 
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
   }
   
   .addition-column-display .result-row {
     grid-column: 1 / -1;
     justify-self: end;
+     /* The inner grid here should match PaddedNumber's structure */
   }
 
   /* General Answer Box for Stages 1 & 2 */

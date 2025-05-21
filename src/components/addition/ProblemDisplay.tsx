@@ -3,18 +3,18 @@
 
 import type * as React from 'react';
 import { Star, Plus } from 'lucide-react';
-import { cn } from "@/lib/utils"; // Make sure cn is imported
+import { cn } from "@/lib/utils";
 
 interface AdditionProblem {
   num1: number;
   num2: number;
   correctAnswer: number;
-  options: number[]; // Used for Stage 1 & 2
-  type: 'addition' | 'subtraction'; // For future expansion
-  actualCarry: number; // The actual carry from the ones column sum (for stage 3 validation)
+  options: number[];
+  type: 'addition' | 'subtraction';
+  actualCarry: number; 
 }
 
-interface Stage3Inputs { // User's input for stage 3
+interface Stage3Inputs {
   carry: string;
   sumTens: string;
   sumOnes: string;
@@ -23,34 +23,28 @@ interface Stage3Inputs { // User's input for stage 3
 interface ProblemDisplayProps {
   problem: AdditionProblem | null;
   stageId: string;
-  stage3Inputs?: Stage3Inputs; // User's current input for stage 3
-  // No actualCarry here, it's part of `problem`
+  stage3Inputs?: Stage3Inputs;
 }
 
 const MAX_STARS_PER_ROW = 5;
 
-// For displaying a blank answer box in Stage 1 and 2
 const AnswerBox = () => (
   <div className="answer-box-visual">
     {/* Content is empty, styled by CSS class */}
   </div>
 );
 
-// For displaying individual digits in Stage 3 inputs (carry and sum)
 const DigitDisplayBox = ({ 
   digit, 
-  isUserInputCarry = false, // True if this box is for the user's carry input
-  // isProblemCarryDisplay = false, // No longer needed as user inputs carry
-  isEmptyPlaceholder = false // For purely empty visual box if needed (not currently used)
+  isUserInputCarry = false,
+  isEmptyPlaceholder = false
 }: { 
-  digit?: string | number; // The digit to display (from user input)
+  digit?: string | number;
   isUserInputCarry?: boolean;
-  // isProblemCarryDisplay?: boolean;
   isEmptyPlaceholder?: boolean;
 }) => {
-  
   let effectiveDigit = digit !== undefined ? digit.toString() : '';
-  if (isEmptyPlaceholder) effectiveDigit = ''; // Should not be hit if displaying user input
+  if (isEmptyPlaceholder) effectiveDigit = '';
 
   return (
     <div className={cn(
@@ -58,27 +52,29 @@ const DigitDisplayBox = ({
       isUserInputCarry 
         ? "border-red-500 bg-red-50 text-red-700" // Style for user's CARRY input box
         : "border-muted-foreground bg-background/50 text-primary", // Default for SUM digit boxes
-      // Removed problem carry display styles as user inputs carry now
+       isEmptyPlaceholder && !isUserInputCarry && "bg-transparent border-dashed", // Special for purely empty sum boxes if needed
+       effectiveDigit === '' && !isUserInputCarry && "text-transparent", // Make placeholder text in sum boxes invisible
     )}>
-      {effectiveDigit}
+      {effectiveDigit || (isUserInputCarry ? '' : '\u00A0')} {/* Render space if empty unless it's carry */}
     </div>
   );
 };
 
-
 // For displaying problem numbers (num1, num2) in Stage 3 column format
-// Ensures that single digit numbers are padded for alignment with two-digit numbers
 const PaddedNumber = ({ num }: { num: number}) => {
   const strNum = num.toString();
-  // Ensure two "digits" for display; pad with non-breaking space if single digit for alignment
-  const tensDisplay = strNum.length > 1 ? strNum[strNum.length - 2] : (num < 10 ? '\u00A0' : strNum[0]);
-  const onesDisplay = strNum.length > 1 ? strNum[strNum.length - 1] : (num < 10 ? strNum[0] : strNum[1]);
+  const isSingleDigit = num < 10;
+  
+  // For a number like 9, tensDisplay should be an empty space for alignment.
+  // For a number like 13, tensDisplay is '1'.
+  const tensDisplay = isSingleDigit ? '\u00A0' : strNum[strNum.length - 2]; // Use non-breaking space for empty tens
+  const onesDisplay = isSingleDigit ? strNum[0] : strNum[strNum.length - 1];
   
   return (
-    <div className="grid grid-cols-2 gap-1 text-right">
-      {/* Each span acts as a column cell. Adjust font/size via parent. */}
-      <span className="w-8 text-center">{tensDisplay}</span> 
-      <span className="w-8 text-center">{onesDisplay}</span>
+    <div className="grid grid-cols-2 gap-0"> {/* Reduced gap for tighter alignment */}
+      {/* Each span acts as a column cell. Align with DigitDisplayBox */}
+      <span className="w-10 text-center">{tensDisplay}</span> 
+      <span className="w-10 text-center">{onesDisplay}</span>
     </div>
   );
 };
@@ -87,13 +83,12 @@ const PaddedNumber = ({ num }: { num: number}) => {
 export function ProblemDisplay({ 
   problem, 
   stageId, 
-  stage3Inputs = { carry: '', sumTens: '', sumOnes: '' } // Default for safety
+  stage3Inputs = { carry: '', sumTens: '', sumOnes: '' }
 }: ProblemDisplayProps): React.JSX.Element {
   if (!problem) {
     return <p className="text-muted-foreground text-xl">Loading problem...</p>;
   }
 
-  // Renders stars for Stage 1
   const renderStars = (count: number) => {
     const rows = [];
     for (let i = 0; i < count; i += MAX_STARS_PER_ROW) {
@@ -109,69 +104,55 @@ export function ProblemDisplay({
         </div>
       );
     }
-    return <div className="my-2 min-h-[50px]">{rows}</div>; // min-h for consistent spacing
+    return <div className="my-2 min-h-[50px]">{rows}</div>;
   };
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
-      {/* Stage 1: Visual Counting */}
       {stageId === 'add-visual' && (
         <div className="flex flex-col items-center space-y-2 sm:space-y-3">
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <div className="flex flex-col items-center">
-              {renderStars(problem.num1)}
-              {/* Removed number display below stars: <p className="text-2xl font-bold text-foreground">{problem.num1}</p> */}
-            </div>
+            <div className="flex flex-col items-center">{renderStars(problem.num1)}</div>
             <Plus className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
-            <div className="flex flex-col items-center">
-              {renderStars(problem.num2)}
-              {/* Removed number display below stars: <p className="text-2xl font-bold text-foreground">{problem.num2}</p> */}
-            </div>
+            <div className="flex flex-col items-center">{renderStars(problem.num2)}</div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-3 mt-3">
             <p className="text-3xl sm:text-4xl font-bold text-primary"> = </p>
-            <AnswerBox /> {/* Blank box for answer */}
+            <AnswerBox />
           </div>
         </div>
       )}
 
-      {/* Stage 2: Numbers Only */}
       {stageId === 'add-numbers' && (
         <div className="flex items-center justify-center space-x-2 sm:space-x-3">
           <p className="text-5xl sm:text-6xl font-bold text-foreground">{problem.num1}</p>
           <Plus className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
           <p className="text-5xl sm:text-6xl font-bold text-foreground">{problem.num2}</p>
           <p className="text-5xl sm:text-6xl font-bold text-primary"> = </p>
-          <AnswerBox /> {/* Blank box for answer */}
+          <AnswerBox />
         </div>
       )}
 
-      {/* Stage 3: Column Addition with Carry Input */}
       {stageId === 'add-carry' && (
         <div className="addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto">
-          {/* User Input Carry Box - positioned by grid above tens column of problem numbers */}
           <div className="carry-row">
+             {/* This div is a spacer to push the carry box to the correct column if using a 2-column grid for carry-row */}
+            <div>{/* Invisible spacer for alignment over TENS column */}</div>
             <DigitDisplayBox 
               digit={stage3Inputs.carry}
-              isUserInputCarry={true} // This styles it as the red input box
+              isUserInputCarry={true}
             /> 
-            {/* The second column of the carry-row's grid is implicitly empty, which helps with alignment */}
           </div>
 
-          {/* Problem Numbers */}
-          <div className="operand-row">
-            <PaddedNumber num={problem.num1} />
-          </div>
+          <div className="operand-row"><PaddedNumber num={problem.num1} /></div>
           <div className="operator-operand-row">
-            <span className="operator text-primary mr-2 sm:mr-4">+</span>
+            <span className="operator text-primary mr-1 sm:mr-2">+</span> {/* Adjusted margin for + */}
             <PaddedNumber num={problem.num2} />
           </div>
           <div className="line bg-foreground my-1 sm:my-2"></div>
 
-          {/* User Input Sum Boxes */}
           <div className="result-row">
-            {/* This inner grid aligns the sum digit boxes */}
-            <div className="grid grid-cols-2 gap-1 text-right">
+            <div className="grid grid-cols-2 gap-0"> {/* Reduced gap for tighter alignment */}
               <DigitDisplayBox digit={stage3Inputs.sumTens} /> 
               <DigitDisplayBox digit={stage3Inputs.sumOnes} />
             </div>
@@ -181,5 +162,3 @@ export function ProblemDisplay({
     </div>
   );
 }
-
-    
