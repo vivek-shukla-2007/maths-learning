@@ -1,7 +1,9 @@
 
 // src/lib/themes.ts
 export interface ThemeBlockImage {
-  basePlaceholderUrl: string; // e.g., "https://placehold.co/30x30"
+  basePlaceholderUrl: string; // e.g., "https://placehold.co"
+  imageWidth: number;
+  imageHeight: number;
   color: string; // hex color for placeholder background
   textColor: string; // hex color for placeholder text (if any, try to make it same as bg to hide text)
   alt: string;
@@ -24,14 +26,18 @@ export const THEMES: Theme[] = [
     name: "Classic Blocks",
     description: "The original blocky fun!",
     oneBlock: {
-      basePlaceholderUrl: "https://placehold.co/35x35",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 35,
+      imageHeight: 35,
       color: "FFD700", // Yellow
       textColor: "FFD700",
       alt: "One block (yellow cube)",
       aiHint: "cube yellow",
     },
     tenUnitBlock: {
-      basePlaceholderUrl: "https://placehold.co/35x35",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 30, // Slightly smaller for stacking
+      imageHeight: 30,
       color: "3BA9D9", // Blue
       textColor: "3BA9D9",
       alt: "Part of a ten stack (blue cube)",
@@ -45,14 +51,18 @@ export const THEMES: Theme[] = [
     name: "Fruity Fun",
     description: "Count yummy fruits!",
     oneBlock: {
-      basePlaceholderUrl: "https://placehold.co/40x40",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 40,
+      imageHeight: 40,
       color: "FF6347", // Tomato red (apple)
       textColor: "FF6347",
       alt: "Single apple",
       aiHint: "apple fruit",
     },
     tenUnitBlock: {
-      basePlaceholderUrl: "https://placehold.co/40x40",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 38, // Adjusted for visual balance in stack
+      imageHeight: 38,
       color: "32CD32", // Lime green (lime/grape)
       textColor: "32CD32",
       alt: "Single lime (part of a bunch)",
@@ -66,14 +76,18 @@ export const THEMES: Theme[] = [
     name: "Starry Night",
     description: "Reach for the stars!",
     oneBlock: {
-      basePlaceholderUrl: "https://placehold.co/40x40",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 40,
+      imageHeight: 40,
       color: "FFEB3B", // Bright Yellow (star)
       textColor: "FFEB3B",
       alt: "Single star",
       aiHint: "star shiny",
     },
     tenUnitBlock: {
-      basePlaceholderUrl: "https://placehold.co/40x40",
+      basePlaceholderUrl: "https://placehold.co",
+      imageWidth: 38, // Adjusted
+      imageHeight: 38,
       color: "9C27B0", // Purple (cosmic dust for ten-group)
       textColor: "9C27B0",
       alt: "Single cosmic particle (part of a cluster)",

@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import type * as React from 'react';
-import type { Theme } from '@/lib/themes'; // THEME Import
+import type { Theme, ThemeBlockImage } from '@/lib/themes'; // THEME Import
 import { cn } from '@/lib/utils';
 
 interface BlockDisplayProps {
@@ -16,8 +16,8 @@ const BLOCKS_PER_ROW_FOR_ONES = 3;
 
 export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JSX.Element {
   
-  const getImageUrl = (blockConfig: Theme['oneBlock'] | Theme['tenUnitBlock']) => {
-    return `${blockConfig.basePlaceholderUrl}/${blockConfig.color}/${blockConfig.textColor}.png`;
+  const getImageUrl = (blockConfig: ThemeBlockImage) => {
+    return `${blockConfig.basePlaceholderUrl}/${blockConfig.imageWidth}x${blockConfig.imageHeight}/${blockConfig.color}/${blockConfig.textColor}.png?text=+`;
   };
 
   const renderOneBlocks = () => {
@@ -30,10 +30,11 @@ export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JS
             <Image
               src={getImageUrl(theme.oneBlock)}
               alt={theme.oneBlock.alt}
-              width={35}
-              height={35}
+              width={theme.oneBlock.imageWidth}
+              height={theme.oneBlock.imageHeight}
               className="rounded"
               data-ai-hint={theme.oneBlock.aiHint}
+              priority={i + j < BLOCKS_PER_ROW_FOR_ONES * 2} // Prioritize loading first few blocks
             />
           </div>
         );
@@ -60,10 +61,11 @@ export function BlockDisplay({ tens, ones, theme }: BlockDisplayProps): React.JS
                     key={`ten-${tenIndex}-one-${oneIndex}`}
                     src={getImageUrl(theme.tenUnitBlock)}
                     alt={theme.tenUnitBlock.alt}
-                    width={30} 
-                    height={30}
+                    width={theme.tenUnitBlock.imageWidth}
+                    height={theme.tenUnitBlock.imageHeight}
                     className="rounded"
                     data-ai-hint={theme.tenUnitBlock.aiHint}
+                    priority={tenIndex < 1 && oneIndex < 5} // Prioritize loading some ten-blocks
                   />
                 ))}
               </div>
