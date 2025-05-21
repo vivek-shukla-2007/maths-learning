@@ -8,11 +8,10 @@ import { cn } from "@/lib/utils";
 interface SubtractionProblem {
   minuend: number;
   subtrahend: number;
-  // For Stage 3, more properties like actualBorrowed, visuallyAdjustedMinuendTens, visuallyAdjustedMinuendOnes might be needed
+  actualIsBorrowingNeeded?: boolean;
 }
 
-interface Stage3Inputs { // For column subtraction
-  borrowed: string; // Or a representation of the changed minuend
+interface Stage3Inputs {
   diffTens: string;
   diffOnes: string;
 }
@@ -20,20 +19,19 @@ interface Stage3Inputs { // For column subtraction
 interface ProblemDisplayProps {
   problem: SubtractionProblem | null;
   stageId: string;
-  stage3Inputs?: Stage3Inputs; // Only for stage 'sub-borrow'
+  stage3Inputs?: Stage3Inputs;
 }
 
 const MAX_STARS_PER_ROW = 5;
 
 const AnswerBox = () => (
-  <div className="answer-box-visual"> {/* Reusing class from globals.css */}
+  <div className="answer-box-visual">
   </div>
 );
 
-// Simplified for now, will be enhanced for Stage 3's column display
 const DigitDisplayBox = ({
   digit,
-  isBorrowVisualization = false, // e.g., to show a crossed-out number or new number after borrowing
+  isBorrowVisualization = false, 
   isEmptyPlaceholder = false,
 }: {
   digit?: string | number;
@@ -47,7 +45,7 @@ const DigitDisplayBox = ({
     <div className={cn(
       "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
       isBorrowVisualization
-        ? "border-orange-500 bg-orange-50 text-orange-700" // Example styling for borrow visualization
+        ? "border-orange-500 bg-orange-50 text-orange-700" 
         : isEmptyPlaceholder && effectiveDigit === ''
             ? "border-dashed border-muted-foreground/50"
             : "border-muted-foreground bg-background/50 text-primary",
@@ -76,7 +74,7 @@ const PaddedNumber = ({ num }: { num: number}) => {
 export function ProblemDisplay({
   problem,
   stageId,
-  stage3Inputs = { borrowed: '', diffTens: '', diffOnes: '' }
+  stage3Inputs = { diffTens: '', diffOnes: '' }
 }: ProblemDisplayProps): React.JSX.Element {
   if (!problem) {
     return <p className="text-muted-foreground text-xl">Loading problem...</p>;
@@ -103,11 +101,12 @@ export function ProblemDisplay({
         </div>
       );
     }
-    // Simple visual for "taking away": show minuend stars, then minus, then subtrahend stars (perhaps styled differently)
     return <div className="my-2 min-h-[50px]">{rows}</div>;
   };
   
-  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))";
+  // Using addition-column-display class for consistent styling base
+  const columnDisplayClass = "addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto";
+  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; // For two w-10 boxes and gap-x-1
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
@@ -136,14 +135,13 @@ export function ProblemDisplay({
       )}
 
       {stageId === 'sub-borrow' && (
-         <div className="addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto">
-          {/* Borrowing Visualization Row (placeholder, to be implemented) */}
-          {/* This will need careful state management to show crossed out numbers & new numbers after borrowing */}
+         <div className={cn(columnDisplayClass)}>
+          {/* Borrowing Visualization Row (Non-interactive placeholder for future enhancement) */}
           <div className="grid grid-cols-2 gap-x-1 w-auto min-h-[2.5rem] mb-0.5">
-            {/* Example: DigitDisplayBox for new tens digit after borrow */}
-             {/* <DigitDisplayBox digit={stage3Inputs.borrowed} isBorrowVisualization={true} />  */}
-            <div className="w-10"></div> {/* Potential placeholder for new tens */}
-            <div className="w-10"></div> {/* Potential placeholder for new ones (e.g., 10+original ones) */}
+            {/* Example: <DigitDisplayBox digit={'4'} isBorrowVisualization={true} /> <DigitDisplayBox digit={'12'} isBorrowVisualization={true} /> */}
+            {/* For now, it's just a spacer */}
+            <div className="w-10"></div> 
+            <div className="w-10"></div> 
           </div>
 
           {/* Minuend Row */}
@@ -173,3 +171,5 @@ export function ProblemDisplay({
     </div>
   );
 }
+
+    

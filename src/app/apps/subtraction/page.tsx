@@ -13,9 +13,9 @@ import { SUBTRACTION_STAGES } from '@/lib/constants';
 import { StageSelector } from '@/components/subtraction/StageSelector';
 import { ProblemDisplay } from '@/components/subtraction/ProblemDisplay';
 import { AnswerOptions } from '@/components/subtraction/AnswerOptions';
-import { NumpadInput } from '@/components/subtraction/NumpadInput'; // For Stage 3
+import { NumpadInput } from '@/components/subtraction/NumpadInput';
 
-type GameView = "stageSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback"; // eval/feedback for future AI
+type GameView = "stageSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
 
 interface SubtractionProblem {
@@ -23,15 +23,10 @@ interface SubtractionProblem {
   subtrahend: number;
   correctAnswer: number;
   options: number[];
-  // For Stage 3:
-  actualIsBorrowingNeeded?: boolean; 
-  // We might add more fields for Stage 3 visualization later like:
-  // visuallyAdjustedMinuendTens?: number;
-  // visuallyAdjustedMinuendOnes?: number;
+  actualIsBorrowingNeeded?: boolean;
 }
 
-interface Stage3Inputs { // For column subtraction user input
-  // borrowedVisual: string; // User doesn't input this directly, system might show it.
+interface Stage3Inputs {
   diffTens: string;
   diffOnes: string;
 }
@@ -43,21 +38,20 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
   const [currentStageId, setCurrentStageId] = useState<string>(SUBTRACTION_STAGES[0].id);
 
   const [currentProblem, setCurrentProblem] = useState<SubtractionProblem | null>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null); // For stages 1 & 2
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [stage3Inputs, setStage3Inputs] = useState<Stage3Inputs>(initialStage3Inputs);
 
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
 
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false); // Placeholder
+  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
   const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
   const { toast } = useToast();
 
   const generateProblemOptions = useCallback((correctNum: number, maxNumInRange: number): number[] => {
     const incorrectOptions = new Set<number>();
-    // Ensure options are reasonable and don't go below 0 for subtraction
     while (incorrectOptions.size < 3) {
       let potentialOption;
-      const offset = Math.floor(Math.random() * 5) + 1; // Bias towards smaller offsets
+      const offset = Math.floor(Math.random() * 5) + 1;
       if (Math.random() < 0.5) {
         potentialOption = correctNum + offset;
       } else {
@@ -66,7 +60,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
       
       if (potentialOption !== correctNum && potentialOption >= 0 && potentialOption <= maxNumInRange + 5) {
         incorrectOptions.add(potentialOption);
-      } else { // Fallback if too many attempts fail to find good offsets
+      } else {
           let fallback = Math.floor(Math.random() * (maxNumInRange + 1));
           if (fallback !== correctNum && fallback >= 0) incorrectOptions.add(fallback);
       }
@@ -84,28 +78,31 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     let actualIsBorrowingNeeded = false;
 
     if (stage.id === 'sub-visual' || stage.id === 'sub-numbers') {
-      minuend = Math.floor(Math.random() * (stage.maxMinuend - 1)) + 1; // Minuend at least 1
-      subtrahend = Math.floor(Math.random() * minuend); // Subtrahend is 0 to minuend-1, so result always >=0
-       if (minuend === subtrahend && minuend > 0) { // Avoid M - M = 0 too often for small numbers
+      minuend = Math.floor(Math.random() * (stage.maxMinuend - 1)) + 1; 
+      subtrahend = Math.floor(Math.random() * minuend);
+       if (minuend === subtrahend && minuend > 0) {
            subtrahend = Math.max(0, subtrahend -1);
-       } else if (minuend === 0) { // Should not happen with minuend >=1
+       } else if (minuend === 0) {
            minuend = 1; subtrahend = 0;
        }
-
     } else if (stage.id === 'sub-borrow') {
-      // Generate two 2-digit numbers where borrowing is required.
-      // Minuend: 10-99, Subtrahend: 10-98 (and < minuend)
-      // Ensure ones_minuend < ones_subtrahend
+      let onesMinuend = 0, onesSubtrahend = 0;
       do {
         minuend = Math.floor(Math.random() * 90) + 10; // 10-99
-        subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10; // Ensure subtrahend is smaller and >= 10 to make borrowing meaningful
-        
-        const onesMinuend = minuend % 10;
-        const onesSubtrahend = subtrahend % 10;
+        subtrahend = Math.floor(Math.random() * (minuend - 1)) + 1; // 1 to minuend-1, ensure subtrahend is smaller
+         // ensure subtrahend is also two digits for typical borrowing problems, or at least > 0
+        if (subtrahend < 10) { // Make subtrahend at least 10 if minuend allows for it
+            if (minuend > 20) { // only if minuend is large enough to subtract a 2-digit number
+                 subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10;
+            }
+        }
+
+        onesMinuend = minuend % 10;
+        onesSubtrahend = subtrahend % 10;
         
         actualIsBorrowingNeeded = onesMinuend < onesSubtrahend;
 
-      } while (!actualIsBorrowingNeeded || minuend - subtrahend < 0); // Ensure borrowing is needed and result isn't negative
+      } while (!actualIsBorrowingNeeded || minuend - subtrahend <= 0 || minuend - subtrahend >= 100); // Ensure borrowing and result is positive & <100
     }
 
     const correctAnswer = minuend - subtrahend;
@@ -152,7 +149,6 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
       setTimeout(() => {
         setFeedbackAnimation(null);
         if (currentStageId === 'sub-borrow') {
-          // For stage 3, allow re-input, but don't clear immediately.
           setGameView("playing"); 
         }
       }, 1200);
@@ -165,14 +161,11 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     handleAnswerSubmission(answer === currentProblem.correctAnswer);
   };
   
-  // Stage 3 Input Handlers (Placeholder - to be developed in next iteration)
   const handleStage3DigitPress = (digit: string) => {
-    // Logic to fill diffOnes, then diffTens
-    // This will be more complex with borrowing visualization
     setStage3Inputs(prev => {
         if (prev.diffOnes === '') return { ...prev, diffOnes: digit };
         if (prev.diffTens === '') return { ...prev, diffTens: digit };
-        return prev;
+        return prev; // Both filled
     });
   };
 
@@ -186,7 +179,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     const { diffTens, diffOnes } = stage3Inputs;
 
     if (diffOnes === '' || diffTens === '') {
-        toast({ title: "Missing Input", description: "Please fill all answer boxes.", variant: "destructive", duration: 2000 });
+        toast({ title: "Missing Input", description: "Please fill all answer boxes for the difference.", variant: "destructive", duration: 2000 });
         return;
     }
     
@@ -205,17 +198,16 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     } else if (stage?.id === 'sub-numbers') {
       hintDescription = `What is ${currentProblem.minuend} minus ${currentProblem.subtrahend}?`;
     } else if (stage?.id === 'sub-borrow') {
-       // More detailed hint needed here based on borrowing logic
-       hintDescription = `Subtract the ones column. If you need to borrow, adjust the tens place of the top number. Then subtract the tens column.`;
+       hintDescription = `Subtract the ones column first. If the top ones digit is smaller than the bottom ones digit, you'll need to borrow 1 ten from the top tens digit (reducing it by 1) and add 10 to the top ones digit. Then subtract the ones, and finally subtract the tens.`;
         if (currentProblem.actualIsBorrowingNeeded) {
-            hintDescription += ` Remember, for this problem, you will need to borrow from the tens place.`;
+            hintDescription += ` For this problem, you definitely need to borrow!`;
         }
     }
 
     toast({
       title: "Hint!",
       description: hintDescription,
-      duration: stage?.id === 'sub-borrow' ? 4000 : 3000,
+      duration: stage?.id === 'sub-borrow' ? 5000 : 3000,
     });
   };
 
@@ -223,7 +215,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     document.title = 'Subtraction Sprints';
   }, []);
 
-  if (isLoadingAI) { // Placeholder for future AI tutor
+  if (isLoadingAI) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -328,3 +320,5 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     </div>
   );
 }
+
+    
