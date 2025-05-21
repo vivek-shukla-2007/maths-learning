@@ -4,6 +4,7 @@
 import type * as React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
 import { LEVELS } from '@/lib/constants';
 
 interface LevelSelectorProps {
@@ -20,9 +21,9 @@ export function LevelSelector({
       <CardHeader>
         <CardTitle className="text-center text-2xl font-bold text-primary">Choose Your Challenge!</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 p-6">
         <div>
-          <p className="text-sm text-muted-foreground mb-2 text-center">Select a Level:</p>
+          <p className="text-sm text-muted-foreground mb-2 text-center">Select a Max Number for Questions:</p>
           <Select
             onValueChange={(value) => onLevelSelect(parseInt(value))}
             disabled={disabled}

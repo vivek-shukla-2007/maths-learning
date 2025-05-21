@@ -30,8 +30,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
-  const [questionsInBatch, setQuestionsInBatch] = useState<number>(0);
-
+  
   const [lastSelectedAnswerForAI, setLastSelectedAnswerForAI] = useState<number>(0);
   const [lastCorrectAnswerForAI, setLastCorrectAnswerForAI] = useState<number>(0);
 
@@ -74,19 +73,17 @@ export default function PlaceValuePage(): React.JSX.Element {
   const handleLevelSelect = (maxNumberFromLevel: number) => {
     setCurrentMaxNumber(maxNumberFromLevel);
     setScore({ correct: 0, total: 0 });
-    setQuestionsInBatch(0);
     generateNewQuestion(maxNumberFromLevel);
   };
 
   const handleGoHome = () => {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
-    setQuestionsInBatch(0);
     setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); 
   };
 
   const proceedToNextStep = useCallback(() => {
-    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) {
+    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0) && score.total !== 0) { // Check score.total !==0 to avoid AI trigger at start
        setGameStage("evaluatingAI");
     } else {
       generateNewQuestion(currentMaxNumber);
@@ -95,10 +92,10 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   const handleAnswerSelect = (answer: number) => {
     setSelectedAnswer(answer); 
-    setLastSelectedAnswerForAI(answer); 
-    setLastCorrectAnswerForAI(targetNumber);
-
+    
     if (answer === targetNumber) {
+      setLastSelectedAnswerForAI(answer); 
+      setLastCorrectAnswerForAI(targetNumber);
       setScore(prev => ({ 
         correct: prev.correct + 1,
         total: prev.total + 1 
@@ -109,10 +106,10 @@ export default function PlaceValuePage(): React.JSX.Element {
         proceedToNextStep();
       }, 1200); 
     } else {
-      setScore(prev => ({
-        ...prev,
-        total: prev.total +1 // Increment total for incorrect attempts as well to trigger AI tutor
-      }));
+      // For incorrect answers, we don't update lastSelected/CorrectAnswerForAI yet,
+      // as the AI tutor should be based on overall performance after a batch.
+      // The score.total is incremented when a question is finally answered correctly or if we move on.
+      // For now, just show feedback.
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
       // User stays on the same question, gameStage remains "playing".
     }
@@ -141,7 +138,7 @@ export default function PlaceValuePage(): React.JSX.Element {
         try {
           const aiInput: AdaptiveTutoringInput = {
             level: currentMaxNumber,
-            studentAnswer: lastSelectedAnswerForAI,
+            studentAnswer: lastSelectedAnswerForAI, // This uses the last correctly answered question's data
             correctAnswer: lastCorrectAnswerForAI,
             score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
           };
@@ -154,12 +151,10 @@ export default function PlaceValuePage(): React.JSX.Element {
           setAiTutorExplanation(aiResponse.explanation);
           setGameStage("aiFeedback");
           setScore({ correct: 0, total: 0 }); 
-          setQuestionsInBatch(0);
         } catch (error) {
           console.error("Error with AI Tutor:", error);
           toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive", duration: 3000 });
           setScore({ correct: 0, total: 0 });
-          setQuestionsInBatch(0);
           generateNewQuestion(currentMaxNumber); 
         } finally {
           setIsLoadingAI(false);
