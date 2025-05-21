@@ -199,13 +199,13 @@ export default function AdditionAdventurePage(): React.JSX.Element {
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           {gameView !== "stageSelection" && currentProblem && (
-            <Button variant="outline" size="lg" onClick={handleGameMenu} className="shadow-md text-sm md:text-base">
-              <ListRestart className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Game Menu
+            <Button variant="outline" size="icon" onClick={handleGameMenu} className="shadow-md" aria-label="Game Menu">
+              <ListRestart className="h-5 w-5" />
             </Button>
           )}
           <Link href="/" passHref>
-            <Button variant="secondary" size="lg" className="shadow-md text-sm md:text-base">
-              <LayoutGrid className="mr-2 h-4 w-4 md:h-5 md:w-5" /> All Apps
+            <Button variant="secondary" size="icon" className="shadow-md" aria-label="All Apps">
+              <LayoutGrid className="h-5 w-5" />
             </Button>
           </Link>
         </div>
@@ -224,7 +224,7 @@ export default function AdditionAdventurePage(): React.JSX.Element {
           <Card className="shadow-xl flex flex-col min-h-[300px] md:min-h-[400px]"> {/* Added min-height */}
             <CardHeader>
               <CardTitle className="text-3xl text-center text-primary">
-                {ADDITION_STAGES.find(s => s.id === currentStageId)?.name || "Solve!"}
+                Solve!
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center"> 
