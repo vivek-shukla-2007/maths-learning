@@ -16,6 +16,7 @@ interface AnswerOptionsProps {
   correctAnswer: number | null;
   className?: string;
   disabled?: boolean;
+  stageId?: string; // Added to conditionally hide hint
 }
 
 export function AnswerOptions({
@@ -27,10 +28,11 @@ export function AnswerOptions({
   correctAnswer,
   className,
   disabled = false,
+  stageId,
 }: AnswerOptionsProps): React.JSX.Element {
   
   const getButtonVariant = (option: number) => {
-    if (!isAnswered && selectedAnswer === option) return "secondary"; // Highlight selection before confirming
+    if (!isAnswered && selectedAnswer === option) return "secondary"; 
     if (isAnswered && selectedAnswer === option) {
       return option === correctAnswer ? "default" : "destructive";
     }
@@ -43,6 +45,8 @@ export function AnswerOptions({
     }
     return null;
   };
+
+  const showHintButton = stageId !== 'add-visual';
 
   return (
     <Card className={cn("w-full max-w-md shadow-lg", className)}>
@@ -63,16 +67,18 @@ export function AnswerOptions({
           ))}
         </div>
         
-        <div className="flex justify-center items-center pt-2">
-          <Button 
-            variant="ghost" 
-            onClick={onShowHint} 
-            disabled={disabled || (isAnswered && selectedAnswer === correctAnswer)}
-            className="text-accent-foreground hover:text-accent"
-          >
-            <Lightbulb className="mr-2 h-5 w-5" /> Hint
-          </Button>
-        </div>
+        {showHintButton && (
+          <div className="flex justify-center items-center pt-2">
+            <Button 
+              variant="ghost" 
+              onClick={onShowHint} 
+              disabled={disabled || (isAnswered && selectedAnswer === correctAnswer)}
+              className="text-accent-foreground hover:text-accent"
+            >
+              <Lightbulb className="mr-2 h-5 w-5" /> Hint
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

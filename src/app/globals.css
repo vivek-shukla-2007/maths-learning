@@ -125,42 +125,58 @@
  /* Styles for Column Addition in ProblemDisplay.tsx */
   .addition-column-display {
     display: grid;
-    grid-template-rows: auto auto auto auto; /* Carry(optional), Num1, Operator+Num2, Line, Result */
+    grid-template-rows: auto auto auto auto auto; /* Carry(optional), Num1, Operator+Num2, Line, Result */
     justify-items: end; /* Aligns items to the right of their grid cell */
-    gap: 0.25rem;
+    gap: 0.25rem; /* Reduced gap */
     width: fit-content; /* Adjusts to content size */
     margin: 0 auto; /* Centers the block */
+    font-size: 1.5rem; /* Base font size for this block, can be overridden by text-.. classes */
   }
+
+  @media (min-width: 640px) { /* sm breakpoint */
+    .addition-column-display {
+      font-size: 1.875rem; /* text-3xl */
+    }
+  }
+  @media (min-width: 768px) { /* md breakpoint */
+    .addition-column-display {
+      font-size: 2.25rem; /* text-4xl */
+    }
+  }
+
 
   .addition-column-display .carry-row {
     grid-column: 1 / -1; /* Span all columns for the carry */
-    display: flex;
-    justify-content: flex-end; /* Align carry digit(s) to the right */
-    padding-right: 0.5em; /* Align with ones digit of numbers below */
-    min-height: 2.5rem; /* Space for carry */
+    display: grid; /* Use grid for alignment */
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* Two columns for tens and ones carry spots */
+    gap: 0.25rem; /* Gap between carry boxes if two are shown, or align with PaddedNumber */
+    justify-items: end;
+    padding-right: 0; /* Padding handled by PaddedNumber or DigitDisplayBox */
+    min-height: 2rem; /* Space for carry */
+    width: 100%; /* Ensure it spans */
   }
   
   .addition-column-display .operand-row {
     grid-column: 1 / -1;
-    justify-self: end; /* Ensure the number itself is right-aligned if it's shorter than the grid */
+    justify-self: end; 
   }
 
   .addition-column-display .operator-operand-row {
     grid-column: 1 / -1;
     display: flex;
-    justify-content: flex-end; /* Aligns the whole row content to the right */
+    justify-content: flex-end; 
     align-items: center;
     width: 100%;
   }
   
   .addition-column-display .operator-operand-row .operator {
-     margin-right: 0.5em; /* Space between operator and number */
+     margin-right: 0.5em; 
   }
   
   .addition-column-display .line {
     grid-column: 1 / -1;
     height: 2px;
-    width: 100%; /* Make line span the full width of the content */
+    width: 100%; 
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
   }
