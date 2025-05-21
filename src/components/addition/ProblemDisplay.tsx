@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 interface AdditionProblem {
   num1: number;
   num2: number;
-  // correctAnswer, options, type, actualCarry are part of the problem object passed
-  // but not all directly used in ProblemDisplayProps if stage3Inputs handles display for Stage 3 answer
+  actualCarry?: number; // Used for validation, not direct display by ProblemDisplay
+  // correctAnswer, options, type are part of the problem object passed
 }
 
 interface Stage3Inputs {
@@ -21,7 +21,7 @@ interface Stage3Inputs {
 interface ProblemDisplayProps {
   problem: AdditionProblem | null;
   stageId: string;
-  stage3Inputs?: Stage3Inputs; // Used for displaying user's input in Stage 3
+  stage3Inputs?: Stage3Inputs;
 }
 
 const MAX_STARS_PER_ROW = 5;
@@ -34,29 +34,28 @@ const AnswerBox = () => (
 );
 
 // Component to display a single digit, used for Stage 3 carry and sum input boxes
-const DigitDisplayBox = ({ 
-  digit, 
+const DigitDisplayBox = ({
+  digit,
   isUserInputCarry = false,
-  isEmptyPlaceholder = false, // If true, and no digit, it's just a faint box
-}: { 
+  isEmptyPlaceholder = false,
+}: {
   digit?: string | number;
   isUserInputCarry?: boolean;
   isEmptyPlaceholder?: boolean;
 }) => {
-  let effectiveDigit = digit !== undefined ? digit.toString() : '';
-   if (isEmptyPlaceholder && effectiveDigit === '') effectiveDigit = ''; // Show nothing for true placeholders
+  let effectiveDigit = digit !== undefined ? String(digit) : '';
+  if (isEmptyPlaceholder && effectiveDigit === '') effectiveDigit = '';
 
   return (
     <div className={cn(
       "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
-      isUserInputCarry 
-        ? "border-red-500 bg-red-50 text-red-700" // Style for user's CARRY input box
-        : isEmptyPlaceholder && effectiveDigit === '' 
-            ? "border-dashed border-muted-foreground/50" // Faint box for empty sum placeholders
-            : "border-muted-foreground bg-background/50 text-primary", // Default for SUM digit boxes with content
-       effectiveDigit === '' && !isUserInputCarry && !isEmptyPlaceholder && "text-transparent", // Make placeholder text in sum boxes invisible if not explicit placeholder
+      isUserInputCarry
+        ? "border-red-500 bg-red-50 text-red-700"
+        : isEmptyPlaceholder && effectiveDigit === ''
+            ? "border-dashed border-muted-foreground/50"
+            : "border-muted-foreground bg-background/50 text-primary",
+       effectiveDigit === '' && !isUserInputCarry && !isEmptyPlaceholder && "text-transparent",
     )}>
-      {/* Render non-breaking space if empty unless it's a carry or explicit empty placeholder */}
       {effectiveDigit || (isUserInputCarry || isEmptyPlaceholder ? '' : '\u00A0')}
     </div>
   );
@@ -64,25 +63,25 @@ const DigitDisplayBox = ({
 
 // Component to display problem numbers (num1, num2) with padding for column alignment
 const PaddedNumber = ({ num }: { num: number}) => {
-  const strNum = num.toString();
-  const isSingleDigit = num < 10;
-  
-  const tensDisplay = isSingleDigit ? '\u00A0' : (strNum.length > 1 ? strNum[strNum.length - 2] : '\u00A0');
-  const onesDisplay = strNum[strNum.length - 1];
-  
+  const strNum = String(num);
+  // For a single digit number like 3, tens should be empty, ones should be '3'
+  // For a two digit number like 12, tens is '1', ones is '2'
+  const onesDisplay = strNum.slice(-1);
+  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0'; // Non-breaking space for empty tens
+
   return (
-    <div className="grid grid-cols-2 gap-x-1 w-auto"> {/* Using gap-x-1 like result boxes */}
-      <span className="w-10 text-center">{tensDisplay}</span> 
+    <div className="grid grid-cols-2 gap-x-1 w-auto">
+      <span className="w-10 text-center">{tensDisplay}</span>
       <span className="w-10 text-center">{onesDisplay}</span>
     </div>
   );
 };
 
 
-export function ProblemDisplay({ 
-  problem, 
-  stageId, 
-  stage3Inputs = { carry: '', sumTens: '', sumOnes: '' } // Default for safety
+export function ProblemDisplay({
+  problem,
+  stageId,
+  stage3Inputs = { carry: '', sumTens: '', sumOnes: '' }
 }: ProblemDisplayProps): React.JSX.Element {
   if (!problem) {
     return <p className="text-muted-foreground text-xl">Loading problem...</p>;
@@ -105,6 +104,9 @@ export function ProblemDisplay({
     }
     return <div className="my-2 min-h-[50px]">{rows}</div>;
   };
+
+  // Calculate line width for Stage 3 based on two digit boxes and their gap
+  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; // 2 * w-10 + gap-x-1
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
@@ -135,44 +137,42 @@ export function ProblemDisplay({
       {stageId === 'add-carry' && (
         <div className="addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto">
           {/* Carry Row: Box appears after sumOnes is entered */}
-          <div className="flex justify-end min-h-[2.5rem] w-full pr-[calc(theme(spacing.1)_+_10px)]"> {/* Approximating alignment: gap-x-1 is 0.25rem (4px), w-10 for ones box. So shift carry left by one box + gap */}
-             {/* This div structure aims to place the carry box over the tens column of the problem numbers */}
-            {stage3Inputs.sumOnes !== '' && (
-                 <DigitDisplayBox 
-                    digit={stage3Inputs.carry}
-                    isUserInputCarry={true}
-                 />
-            )}
-            {/* If sumOnes is empty, this space is effectively empty, maintaining layout */}
+          <div className="grid grid-cols-2 gap-x-1 w-auto min-h-[2.5rem] mb-0.5"> {/* Matches PaddedNumber structure */}
+            <div className="flex justify-center items-center"> {/* Tens column for carry */}
+              {stage3Inputs.sumOnes !== '' && ( // Only show carry box if sumOnes is filled
+                <DigitDisplayBox
+                  digit={stage3Inputs.carry}
+                  isUserInputCarry={true}
+                />
+              )}
+            </div>
+            <div className="w-10"></div> {/* Empty spacer for ones column in carry row, always present for alignment */}
           </div>
 
           {/* Num1 Row */}
-          <div className="flex justify-end w-full">
-            <PaddedNumber num={problem.num1} />
-          </div>
-          
+          <PaddedNumber num={problem.num1} />
+
           {/* Operator + Num2 Row */}
-          <div className="flex justify-end items-center w-full">
-            <span className="operator text-primary mr-1 sm:mr-2">+</span>
+          <div className="flex justify-end items-center w-full mt-1">
+            <span className="operator text-primary mr-1 sm:mr-2 self-center">+</span>
             <PaddedNumber num={problem.num2} />
           </div>
-          
+
           {/* Line */}
           <div className="line-container flex justify-end w-full">
-            <div className="line bg-foreground my-1 sm:my-2 h-[2px] w-[calc(2*theme(spacing.10)_+_theme(spacing.1))]"></div> {/* Width = 2 * w-10 + gap-x-1 */}
+            <div
+              className="line bg-foreground my-1 sm:my-2 h-[2px]"
+              style={{ width: stage3LineWidth }}
+            ></div>
           </div>
 
           {/* Result Row */}
-          <div className="flex justify-end w-full">
-            <div className="grid grid-cols-2 gap-x-1 w-auto">
-              <DigitDisplayBox digit={stage3Inputs.sumTens} isEmptyPlaceholder={true} /> 
-              <DigitDisplayBox digit={stage3Inputs.sumOnes} isEmptyPlaceholder={true} />
-            </div>
+          <div className="grid grid-cols-2 gap-x-1 w-auto">
+            <DigitDisplayBox digit={stage3Inputs.sumTens} isEmptyPlaceholder={true} />
+            <DigitDisplayBox digit={stage3Inputs.sumOnes} isEmptyPlaceholder={true} />
           </div>
         </div>
       )}
     </div>
   );
 }
-
-    
