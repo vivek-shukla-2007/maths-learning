@@ -4,13 +4,15 @@
 import type * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eraser } from 'lucide-react'; // For clear button
+import { Eraser, Lightbulb } from 'lucide-react'; // For clear button
 import { cn } from "@/lib/utils";
 
 interface NumpadInputProps {
   onDigitPress: (digit: string) => void;
   onClearPress: () => void;
   onSubmitPress: () => void;
+  onShowHint?: () => void; // Optional: for Stage 3 hints
+  showHintButton?: boolean; // Control visibility of hint button
   disabled?: boolean;
   className?: string;
 }
@@ -21,6 +23,8 @@ export function NumpadInput({
   onDigitPress,
   onClearPress,
   onSubmitPress,
+  onShowHint,
+  showHintButton = false,
   disabled = false,
   className,
 }: NumpadInputProps): React.JSX.Element {
@@ -34,7 +38,7 @@ export function NumpadInput({
               variant="outline"
               className={cn(
                 "text-2xl h-14",
-                digit === "0" && "col-span-1" // Keep 0 as single button for now
+                digit === "0" && "col-span-1" 
               )}
               onClick={() => onDigitPress(digit)}
               disabled={disabled}
@@ -61,7 +65,21 @@ export function NumpadInput({
         >
           Submit
         </Button>
+        {showHintButton && onShowHint && (
+          <div className="flex justify-center items-center pt-2">
+            <Button 
+              variant="ghost" 
+              onClick={onShowHint} 
+              disabled={disabled}
+              className="text-accent-foreground hover:text-accent"
+            >
+              <Lightbulb className="mr-2 h-5 w-5" /> Hint
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
+    

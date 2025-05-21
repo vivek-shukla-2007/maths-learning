@@ -11,14 +11,19 @@ interface AdditionProblem {
   correctAnswer: number;
   options: number[];
   type: 'addition' | 'subtraction';
-  actualCarry?: number; // For Stage 3
+  actualCarry: number; 
+}
+
+interface Stage3Inputs {
+  carry: string;
+  sumTens: string;
+  sumOnes: string;
 }
 
 interface ProblemDisplayProps {
   problem: AdditionProblem | null;
   stageId: string;
-  stage3AnswerDigits?: [string, string]; // For Stage 3 interactive input
-  actualCarry?: number; // Explicitly pass actualCarry for Stage 3
+  stage3Inputs?: Stage3Inputs;
 }
 
 const MAX_STARS_PER_ROW = 5;
@@ -29,19 +34,32 @@ const AnswerBox = () => (
   </div>
 );
 
-const DigitDisplayBox = ({ digit, isCarryPlaceholder = false }: { digit?: string | number, isCarryPlaceholder?: boolean }) => {
-  // Display the digit if it's not undefined AND (it's not a carry placeholder OR it's not 0)
-  // For actual carry, if it's 0, we want it to be blank.
-  const displayValue = digit !== undefined && !(isCarryPlaceholder && digit === 0) ? digit.toString() : '';
+// For displaying individual digits in Stage 3 inputs or carry
+const DigitDisplayBox = ({ 
+  digit, 
+  isUserInputCarry = false,
+  isProblemCarryDisplay = false, // If we were to display the actual carry from problem for context
+  isEmptyPlaceholder = false // For purely empty visual box if needed
+}: { 
+  digit?: string | number;
+  isUserInputCarry?: boolean;
+  isProblemCarryDisplay?: boolean;
+  isEmptyPlaceholder?: boolean;
+}) => {
   
+  let effectiveDigit = digit !== undefined ? digit.toString() : '';
+  if (isEmptyPlaceholder) effectiveDigit = '';
+
   return (
     <div className={cn(
-      "w-10 h-10 border rounded-md flex items-center justify-center text-2xl font-mono",
-      isCarryPlaceholder 
-        ? (displayValue === '' ? "border-transparent" : "border-muted-foreground bg-transparent text-primary") // Subtle if empty, visible if has carry
-        : "border-muted-foreground bg-background/50 text-primary" // Normal answer digit box
+      "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
+      isUserInputCarry 
+        ? "border-red-500 bg-red-50 text-red-700" // User's carry input box
+        : "border-muted-foreground bg-background/50 text-primary", // Default for sum digits
+      (isProblemCarryDisplay && digit === 0) ? "border-transparent text-transparent bg-transparent" : "", // Hide '0' if it's problem carry
+      (isProblemCarryDisplay && digit !== 0 && digit !== undefined) ? "border-primary bg-primary/10 text-primary" : "" // Style for non-zero problem carry
     )}>
-      {displayValue}
+      {effectiveDigit}
     </div>
   );
 };
@@ -49,9 +67,19 @@ const DigitDisplayBox = ({ digit, isCarryPlaceholder = false }: { digit?: string
 
 const PaddedNumber = ({ num }: { num: number}) => {
   const strNum = num.toString();
-  const tens = strNum.length > 1 ? strNum[strNum.length - 2] : '\u00A0'; // Use non-breaking space for alignment
-  const ones = strNum[strNum.length - 1];
+  // Ensure two digits, pad with non-breaking space if single digit
+  const tens = strNum.length > 1 ? strNum[strNum.length - 2] : (strNum.length === 1 && num < 10 ? '\u00A0' : strNum[0]);
+  const ones = strNum.length > 1 ? strNum[strNum.length - 1] : (strNum.length === 1 ? strNum[0] : strNum[1]);
   
+  // If the number is single digit, display it in the ones place, tens is space
+  if (num < 10) {
+    return (
+      <div className="grid grid-cols-2 gap-1 text-right">
+        <span>&nbsp;</span> 
+        <span>{num}</span>
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-2 gap-1 text-right">
       <span>{tens}</span>
@@ -61,7 +89,7 @@ const PaddedNumber = ({ num }: { num: number}) => {
 };
 
 
-export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', ''], actualCarry }: ProblemDisplayProps): React.JSX.Element {
+export function ProblemDisplay({ problem, stageId, stage3Inputs = { carry: '', sumTens: '', sumOnes: '' } }: ProblemDisplayProps): React.JSX.Element {
   if (!problem) {
     return <p className="text-muted-foreground text-xl">Loading problem...</p>;
   }
@@ -116,26 +144,30 @@ export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', '']
 
       {stageId === 'add-carry' && (
         <div className="addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto">
+          {/* User Input Carry Box */}
           <div className="carry-row">
-             {/* Display actual calculated carry. Pass isCarryPlaceholder true to style it as a carry box */}
             <DigitDisplayBox 
-              digit={(actualCarry !== undefined && actualCarry > 0) ? actualCarry : ''} 
-              isCarryPlaceholder={true} 
+              digit={stage3Inputs.carry}
+              isUserInputCarry={true}
             /> 
-            <div className="w-10 h-10"></div> {/* Spacer for ones column align with PaddedNumber */}
+            <div className="w-10 h-10"></div> {/* Spacer for ones column alignment */}
           </div>
-          <div className="operand-row justify-end">
+
+          {/* Problem Numbers */}
+          <div className="operand-row">
             <PaddedNumber num={problem.num1} />
           </div>
-          <div className="operator-operand-row flex justify-between items-center">
+          <div className="operator-operand-row">
             <span className="operator text-primary mr-2 sm:mr-4">+</span>
             <PaddedNumber num={problem.num2} />
           </div>
           <div className="line bg-foreground my-1 sm:my-2"></div>
-          <div className="result-row justify-end">
+
+          {/* User Input Sum Boxes */}
+          <div className="result-row">
             <div className="grid grid-cols-2 gap-1 text-right">
-              <DigitDisplayBox digit={stage3AnswerDigits[0]} /> 
-              <DigitDisplayBox digit={stage3AnswerDigits[1]} />
+              <DigitDisplayBox digit={stage3Inputs.sumTens} /> 
+              <DigitDisplayBox digit={stage3Inputs.sumOnes} />
             </div>
           </div>
         </div>
@@ -143,3 +175,5 @@ export function ProblemDisplay({ problem, stageId, stage3AnswerDigits = ['', '']
     </div>
   );
 }
+
+    
