@@ -12,11 +12,10 @@ interface QuizControlsProps {
   onAnswerSelect: (answer: number) => void;
   onShowHint: () => void;
   onNextQuestion: () => void;
-  feedback: string;
-  isAnswered: boolean;
+  isAnswered: boolean; // True only if gameStage is "answered" (i.e., correct answer given)
   selectedAnswer: number | null;
   correctAnswer: number | null;
-  className?: string; // Added className prop
+  className?: string;
 }
 
 export function QuizControls({
@@ -24,29 +23,29 @@ export function QuizControls({
   onAnswerSelect,
   onShowHint,
   onNextQuestion,
-  feedback,
-  isAnswered,
+  isAnswered, // This now strictly means the question was answered *correctly*
   selectedAnswer,
   correctAnswer,
-  className, // Destructured className
+  className,
 }: QuizControlsProps): React.JSX.Element {
   
   const getButtonVariant = (option: number) => {
-    if (!isAnswered) return "outline";
-    if (option === correctAnswer) return "default";
-    if (option === selectedAnswer && option !== correctAnswer) return "destructive";
-    return "outline";
+    if (selectedAnswer === null) return "outline"; // No answer selected yet
+    if (isAnswered && option === correctAnswer) return "default"; // Correct answer submitted and stage is "answered"
+    if (selectedAnswer === option && option !== correctAnswer) return "destructive"; // Incorrect answer selected
+    if (selectedAnswer === option && option === correctAnswer && !isAnswered) return "outline"; // Correct option clicked, but not yet "answered" stage (should not happen with current logic)
+    return "outline"; // Default for other options
   };
 
   const getButtonIcon = (option: number) => {
-    if (!isAnswered) return null;
-    if (option === correctAnswer) return <CheckCircle2 className="mr-2 h-5 w-5" />;
-    if (option === selectedAnswer && option !== correctAnswer) return <XCircle className="mr-2 h-5 w-5" />;
+    if (selectedAnswer === null) return null;
+    if (isAnswered && option === correctAnswer) return <CheckCircle2 className="mr-2 h-5 w-5" />;
+    if (selectedAnswer === option && option !== correctAnswer) return <XCircle className="mr-2 h-5 w-5" />;
     return null;
   };
 
   return (
-    <Card className={cn("w-full max-w-md shadow-lg", className)}> {/* Used className */}
+    <Card className={cn("w-full max-w-md shadow-lg", className)}>
       <CardContent className="p-6 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           {options.map((option) => (
@@ -56,7 +55,8 @@ export function QuizControls({
               size="lg"
               className="text-lg h-16"
               onClick={() => onAnswerSelect(option)}
-              disabled={isAnswered}
+              // Buttons are disabled only if the question has been correctly answered and awaiting "Next"
+              disabled={isAnswered} 
             >
               {getButtonIcon(option)}
               {option}
@@ -64,21 +64,18 @@ export function QuizControls({
           ))}
         </div>
         
-        {feedback && (
-          <div className={`text-center p-3 rounded-md text-md font-medium ${
-              feedback.toLowerCase().startsWith("correct") ? 'bg-green-100 text-green-700' : 
-              feedback.toLowerCase().startsWith("oops") ? 'bg-red-100 text-red-700' :
-              'bg-blue-100 text-blue-700'
-            }`}>
-            {feedback}
-          </div>
-        )}
+        {/* Feedback text display removed as per user request */}
 
         <div className="flex justify-between items-center pt-2">
-          <Button variant="ghost" onClick={onShowHint} disabled={isAnswered} className="text-accent-foreground hover:text-accent">
+          <Button 
+            variant="ghost" 
+            onClick={onShowHint} 
+            disabled={isAnswered} // Disable hint if question is correctly answered
+            className="text-accent-foreground hover:text-accent"
+          >
             <Lightbulb className="mr-2 h-5 w-5" /> Hint
           </Button>
-          {isAnswered && (
+          {isAnswered && ( // "Next Question" button only appears if isAnswered is true (correct answer given)
             <Button onClick={onNextQuestion} size="lg" className="bg-primary hover:bg-primary/90">
               Next Question <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

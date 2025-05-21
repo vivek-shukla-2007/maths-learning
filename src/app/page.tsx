@@ -27,7 +27,8 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [options, setOptions] = useState<number[]>([]);
   
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<string>("");
+  // Feedback state is no longer used for UI text, only for button color logic if needed elsewhere
+  // const [feedback, setFeedback] = useState<string>("");
   
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
   const [questionsInBatch, setQuestionsInBatch] = useState<number>(0);
@@ -66,7 +67,7 @@ export default function PlaceValuePage(): React.JSX.Element {
     setOnes(newTarget % 10);
     setOptions(generateOptions(newTarget, maxNum));
     setSelectedAnswer(null);
-    setFeedback("");
+    // setFeedback(""); // No longer used for UI text
     setGameStage("playing");
   }, [generateOptions]);
 
@@ -81,29 +82,43 @@ export default function PlaceValuePage(): React.JSX.Element {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
     setQuestionsInBatch(0);
+    setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); // Reset level
   };
 
   const handleAnswerSelect = (answer: number) => {
-    setSelectedAnswer(answer);
-    setGameStage("answered");
-    setLastSelectedAnswerForAI(answer);
-    setLastCorrectAnswerForAI(targetNumber);
+    setSelectedAnswer(answer); // Show selection (button will turn red or green)
+    setLastSelectedAnswerForAI(answer); // For AI Tutor
+    setLastCorrectAnswerForAI(targetNumber); // For AI Tutor
 
-    const newTotal = score.total + 1;
     if (answer === targetNumber) {
-      setFeedback(`Correct! The number was ${targetNumber}.`);
-      setScore(prev => ({ correct: prev.correct + 1, total: newTotal }));
+      // Correct Answer
+      setScore(prev => ({ 
+        correct: prev.correct + 1,
+        total: prev.total // Total increments when proceeding to next question
+      }));
+      setGameStage("answered"); // Go to "answered" state, "Next Question" button appears
     } else {
-      setFeedback(`Oops! You chose ${answer}, but the correct answer was ${targetNumber}.`);
-      setScore(prev => ({ correct: prev.correct, total: newTotal }));
+      // Incorrect Answer
+      // User stays on the same question. `gameStage` remains "playing".
+      // `selectedAnswer` is set, so the button will be red.
+      // They can choose another option from the QuizControls.
+      // Score is not updated for an incorrect attempt on the current question.
     }
   };
   
   const handleShowHint = () => {
-    setFeedback(`Hint: The number is ${targetNumber}. Try to count the blocks!`);
+    // setFeedback(`Hint: The number is ${targetNumber}. Try to count the blocks!`); // No text feedback
+    toast({
+      title: "Hint!",
+      description: `Try counting the blue (tens) and yellow (ones) blocks carefully! Each blue stack is 10.`,
+    });
   };
 
   const proceedToNextStep = () => {
+    // This is called after a correct answer.
+    // Increment total questions *completed* here.
+    setScore(prev => ({ ...prev, total: prev.total + 1 })); 
+
     if (questionsInBatch + 1 >= QUESTIONS_PER_BATCH) {
       setGameStage("evaluatingAI");
     } else {
@@ -121,7 +136,7 @@ export default function PlaceValuePage(): React.JSX.Element {
             level: currentMaxNumber,
             studentAnswer: lastSelectedAnswerForAI,
             correctAnswer: lastCorrectAnswerForAI,
-            score: `${score.correct} out of ${score.total} correct`,
+            score: `${score.correct} out of ${score.total || 1} correct`, // ensure score.total is not 0 for string
           };
           const aiResponse = await adaptiveTutoring(aiInput);
           
@@ -131,13 +146,14 @@ export default function PlaceValuePage(): React.JSX.Element {
           setCurrentMaxNumber(nextLevel);
           setAiTutorExplanation(aiResponse.explanation);
           setGameStage("aiFeedback");
+          // Reset score for the new batch of questions at the new level
           setScore({ correct: 0, total: 0 }); 
           setQuestionsInBatch(0);
         } catch (error) {
           console.error("Error with AI Tutor:", error);
           toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive" });
-          setGameStage("playing");
-          generateNewQuestion(currentMaxNumber);
+          setGameStage("playing"); // Go back to playing
+          generateNewQuestion(currentMaxNumber); // Generate new question for current level
         } finally {
           setIsLoadingAI(false);
         }
@@ -162,10 +178,10 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   return (
     <div className="w-full flex flex-col items-center space-y-6 py-6">
-      <div className="w-full flex justify-between items-start mb-4 px-2"> {/* items-start for ScoreDisplay */}
+      <div className="w-full max-w-3xl flex justify-between items-start mb-4 px-2">
         {gameStage !== "levelSelection" ? (
            <ScoreDisplay correct={score.correct} total={score.total} />
-        ) : <div />} {/* Placeholder to keep layout consistent */}
+        ) : <div className="h-10"/>} {/* Placeholder to keep layout consistent and prevent jump */}
         
         {gameStage !== "levelSelection" && (
           <Button variant="outline" size="lg" onClick={handleGoHome} className="shadow-md">
@@ -174,34 +190,32 @@ export default function PlaceValuePage(): React.JSX.Element {
         )}
       </div>
 
-      {/* Header removed as per request, title is in layout.tsx */}
+      {/* Header text removed, title is in layout.tsx metadata */}
 
       {gameStage === "levelSelection" && (
         <LevelSelector onLevelSelect={handleLevelSelect} disabled={isLoadingAI} />
       )}
 
       {(gameStage === "playing" || gameStage === "answered") && (
-        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-start mt-2"> {/* Reduced mt */}
-          <Card className="shadow-xl">
+        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-stretch mt-2"> {/* items-stretch to make columns equal height */}
+          <Card className="shadow-xl flex flex-col"> {/* flex flex-col for Card */}
             <CardHeader>
               <CardTitle className="text-3xl text-center text-primary">Count the Blocks!</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow"> {/* flex-grow to take available space */}
               <BlockDisplay tens={tens} ones={ones} />
             </CardContent>
           </Card>
-          <div className="flex flex-col h-full pt-2 md:pt-0"> {/* Adjusted padding, ensure flex-col takes height */}
-             {/* QuizControls will be pushed to the bottom by mt-auto if this div has height */}
+          <div className="flex flex-col h-full pt-2 md:pt-0"> {/* This div will contain QuizControls */}
             <QuizControls
               options={options}
               onAnswerSelect={handleAnswerSelect}
               onShowHint={handleShowHint}
               onNextQuestion={proceedToNextStep}
-              feedback={feedback}
               isAnswered={gameStage === "answered"}
               selectedAnswer={selectedAnswer}
               correctAnswer={targetNumber}
-              className="mt-auto" // This pushes the controls to the bottom of the flex container
+              className="mt-auto" // Pushes QuizControls to the bottom
             />
           </div>
         </div>
