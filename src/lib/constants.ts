@@ -22,30 +22,59 @@ export interface AdditionStage {
   id: string;
   name: string;
   minOperandValue: number;
-  maxOperandValue: number; // For Stage 2, this will be 10. Problem generation will handle the "10+9" rule.
+  maxOperandValue: number;
   description?: string;
 }
 
 export const ADDITION_STAGES: AdditionStage[] = [
   {
     id: 'add-visual',
-    name: 'Stage 1: Visual Counting (1-9)',
+    name: 'Stage 1: Visual Counting (Sums up to 10)',
     minOperandValue: 1,
-    maxOperandValue: 9, // Max value for each operand here
+    maxOperandValue: 9,
     description: 'Count the stars to find the sum!'
   },
   {
     id: 'add-numbers',
     name: 'Stage 2: Numbers Only (Sums up to 19)',
-    minOperandValue: 0, // Can be 0 for problems like 0+5
-    maxOperandValue: 10, // Max value for a single operand
+    minOperandValue: 0,
+    maxOperandValue: 10,
     description: 'Add the numbers together.'
   },
   {
     id: 'add-carry',
     name: 'Stage 3: Column Addition (Carry)',
-    minOperandValue: 1,
-    maxOperandValue: 20, // Max value for one of the operands, ensuring sums are manageable
+    minOperandValue: 1, // Operands will be such that their sum is >= 10 and <=99
+    maxOperandValue: 99, // Placeholder, actual logic is more nuanced
     description: 'Practice addition with carrying.'
+  },
+];
+
+// Constants for Subtraction Sprints
+export interface SubtractionStage {
+  id: string;
+  name: string;
+  maxMinuend: number; // Max value for the number being subtracted from
+  description?: string;
+}
+
+export const SUBTRACTION_STAGES: SubtractionStage[] = [
+  {
+    id: 'sub-visual',
+    name: 'Stage 1: Visual Subtraction (Up to 10)',
+    maxMinuend: 10,
+    description: 'Count and take away items.'
+  },
+  {
+    id: 'sub-numbers',
+    name: 'Stage 2: Numbers Only (Minuend up to 19)',
+    maxMinuend: 19,
+    description: 'Subtract the numbers.'
+  },
+  {
+    id: 'sub-borrow',
+    name: 'Stage 3: Column Subtraction (Borrowing)',
+    maxMinuend: 99, // For two-digit subtraction
+    description: 'Practice subtraction with borrowing.'
   },
 ];
