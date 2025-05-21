@@ -1,8 +1,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-// Removed Puzzle icon as we are using a custom SVG for Place Value Puzzles
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Learning Adventures',
@@ -37,24 +36,28 @@ export default function PortalHomePage() {
               <CardTitle className="text-xl md:text-2xl">Place Value Puzzles</CardTitle>
               <CardDescription className="mt-1 text-sm md:text-base">Master tens and ones with fun challenges!</CardDescription>
             </CardHeader>
-            {/* CardContent with Button removed */}
+          </Card>
+        </Link>
+
+        <Link href="/apps/addition" className="block hover:cursor-pointer h-full">
+          <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden h-full flex flex-col">
+            <CardHeader className="items-center text-center p-6 bg-secondary/30 flex-grow">
+              <div className="p-3 bg-accent/20 rounded-full mb-4 inline-flex items-center justify-center h-16 w-16 md:h-20 md:w-20">
+                <svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Addition icon showing 2 plus 3 equals 5">
+                  <text x="50" y="35" fontFamily="sans-serif" fontSize="30" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">2</text>
+                  <text x="50" y="60" fontFamily="sans-serif" fontSize="30" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">+</text>
+                  <text x="50" y="85" fontFamily="sans-serif" fontSize="30" fill="hsl(var(--primary))" textAnchor="middle" fontWeight="bold">3</text>
+                  {/* <line x1="30" y1="90" x2="70" y2="90" stroke="hsl(var(--foreground))" strokeWidth="3"/>
+                  <text x="50" y="110" fontFamily="sans-serif" fontSize="24" fill="hsl(var(--foreground))" textAnchor="middle" fontWeight="bold">5</text> */}
+                </svg>
+              </div>
+              <CardTitle className="text-xl md:text-2xl">Addition Adventure</CardTitle>
+              <CardDescription className="mt-1 text-sm md:text-base">Practice your addition skills!</CardDescription>
+            </CardHeader>
           </Card>
         </Link>
 
         {/* You can add more <Card> components here for future apps, wrapped in <Link> */}
-        {/* Example of a placeholder card for a future app:
-        <Link href="#" className="block hover:cursor-pointer h-full opacity-50 pointer-events-none">
-          <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden h-full flex flex-col">
-            <CardHeader className="items-center text-center p-6 bg-secondary/30 flex-grow">
-              <div className="p-3 bg-muted/30 rounded-full mb-4 inline-flex items-center justify-center h-16 w-16 md:h-20 md:w-20">
-                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M12 2H2v10l9.29 9.29a2.82 2.82 0 0 0 4-4L12 2z"></path><path d="M7 7h.01"></path></svg>
-              </div>
-              <CardTitle className="text-xl md:text-2xl">Future App</CardTitle>
-              <CardDescription className="mt-1 text-sm md:text-base">Coming Soon!</CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        */}
       </div>
     </div>
   );

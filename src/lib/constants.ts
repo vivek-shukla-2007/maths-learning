@@ -15,3 +15,37 @@ export const LEVELS = [
 export const QUESTIONS_PER_BATCH = 5; // Number of questions before AI tutor evaluation
 export const MIN_LEVEL_MAX_VALUE = 9;
 export const MAX_LEVEL_MAX_VALUE = 99;
+
+
+// Constants for Addition Adventure
+export interface AdditionStage {
+  id: string;
+  name: string;
+  minOperandValue: number;
+  maxOperandValue: number;
+  description?: string;
+}
+
+export const ADDITION_STAGES: AdditionStage[] = [
+  { 
+    id: 'add-visual', 
+    name: 'Stage 1: Visual Counting (1-9)', 
+    minOperandValue: 1, 
+    maxOperandValue: 9,
+    description: 'Count the stars to find the sum!' 
+  },
+  { 
+    id: 'add-numbers', 
+    name: 'Stage 2: Numbers Only (1-20)', 
+    minOperandValue: 1, 
+    maxOperandValue: 20,
+    description: 'Add the numbers together.' 
+  },
+  { 
+    id: 'add-carry', 
+    name: 'Stage 3: Column Addition (Carry)', 
+    minOperandValue: 1, // For the smaller number
+    maxOperandValue: 20, // For one of the numbers (e.g. up to 20 + 9)
+    description: 'Practice addition with carrying.' 
+  },
+];

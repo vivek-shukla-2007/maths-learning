@@ -102,7 +102,7 @@
   }
 }
 
-/* Custom Animations for V2 */
+/* Custom Animations */
 @layer utilities {
   @keyframes scale-up-pop {
     0% {
@@ -120,5 +120,48 @@
   }
   .animate-scale-up-pop {
     animation: scale-up-pop 1.2s ease-out forwards;
+  }
+
+  /* Styles for Column Addition */
+  .addition-column-display {
+    display: grid;
+    grid-template-columns: auto 1fr; /* Operator pushed to left, number to right */
+    grid-template-rows: auto auto auto;
+    align-items: end; /* Align numbers to the right effectively */
+    gap: 0.25rem 0.5rem; /* row-gap column-gap */
+    min-width: 100px; /* Ensure it has some width */
+  }
+
+  .addition-num1 {
+    grid-column: 2 / 3; /* Span to the right */
+    text-align: right;
+  }
+
+  .addition-operator-operand {
+    grid-column: 1 / 3; /* Span both columns for layout flexibility */
+    display: flex;
+    justify-content: space-between; /* Pushes operator left, number right */
+    width: 100%;
+    padding-right:0; /* Align with num1 */
+  }
+  .addition-operator {
+     padding-right: 0.5em; /* Space between operator and number, adjust as needed */
+  }
+  .addition-num2 {
+    text-align: right;
+    flex-grow: 1;
+  }
+  
+  .addition-line {
+    grid-column: 1 / 3;
+    height: 2px;
+    background-color: hsl(var(--foreground));
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .addition-equals {
+    grid-column: 2 / 3; /* Align with numbers */
+    text-align: right;
   }
 }
