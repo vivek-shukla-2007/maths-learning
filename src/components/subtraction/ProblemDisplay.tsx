@@ -3,7 +3,7 @@
 
 import type * as React from 'react';
 import { Star, Minus } from 'lucide-react';
-import { cn } from "@/lib/utils"; // Ensure cn is imported
+import { cn } from "@/lib/utils";
 
 interface SubtractionProblem {
   minuend: number;
@@ -29,14 +29,11 @@ const AnswerBox = () => (
   </div>
 );
 
-// Component to display a single digit, used for Stage 3 sum input boxes
 const DigitDisplayBox = ({
   digit,
-  isBorrowVisualization = false, // Not used in this version, kept for potential future use
   isEmptyPlaceholder = false,
 }: {
   digit?: string | number;
-  isBorrowVisualization?: boolean;
   isEmptyPlaceholder?: boolean;
 }) => {
   let effectiveDigit = digit !== undefined ? String(digit) : '';
@@ -45,7 +42,6 @@ const DigitDisplayBox = ({
   return (
     <div className={cn(
       "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
-      // isBorrowVisualization: Handled by direct styling in Stage 3 minuend display
       isEmptyPlaceholder && effectiveDigit === ''
             ? "border-dashed border-muted-foreground/50"
             : "border-muted-foreground bg-background/50 text-primary",
@@ -56,11 +52,10 @@ const DigitDisplayBox = ({
   );
 };
 
-// Component to display problem numbers (subtrahend) with padding for column alignment
 const PaddedNumber = ({ num }: { num: number}) => {
   const strNum = String(num);
   const onesDisplay = strNum.slice(-1);
-  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0'; // Non-breaking space
+  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0';
 
   return (
     <div className="grid grid-cols-2 gap-x-1 w-auto">
@@ -110,7 +105,6 @@ export function ProblemDisplay({
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
       {stageId === 'sub-visual' && (
-        // ... (Visual stage remains the same)
         <div className="flex flex-col items-center space-y-2 sm:space-y-3">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex flex-col items-center">{renderStars(problem.minuend)}</div>
@@ -125,7 +119,6 @@ export function ProblemDisplay({
       )}
 
       {stageId === 'sub-numbers' && (
-        // ... (Numbers stage remains the same)
         <div className="flex items-center justify-center space-x-2 sm:space-x-3">
           <p className="text-5xl sm:text-6xl font-bold text-foreground">{problem.minuend}</p>
           <Minus className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
@@ -138,38 +131,37 @@ export function ProblemDisplay({
       {stageId === 'sub-borrow' && problem && (
          <div className={cn(columnDisplayClass)}>
           {/* Minuend Row with Borrowing Visualization */}
-          <div className="grid grid-cols-2 gap-x-1 w-auto text-center mb-1 relative">
-            {(() => {
-              const minuendTensOriginal = Math.floor(problem.minuend / 10);
-              const minuendOnesOriginal = problem.minuend % 10;
-              
-              if (problem.actualIsBorrowingNeeded) {
-                const newTens = minuendTensOriginal - 1;
-                const newOnes = minuendOnesOriginal + 10;
-                return (
-                  <>
-                    {/* Tens Column */}
-                    <div className="relative h-12 flex flex-col items-center justify-center">
-                      <span className="absolute top-0 text-xl text-orange-500 font-semibold">{newTens < 0 ? ' ' : newTens}</span>
-                      <span className="mt-5 line-through text-muted-foreground/60">{minuendTensOriginal || '\u00A0'}</span>
-                    </div>
-                    {/* Ones Column */}
-                    <div className="relative h-12 flex flex-col items-center justify-center">
-                      <span className="absolute top-0 text-xl text-orange-500 font-semibold">{newOnes}</span>
-                      <span className="mt-5 line-through text-muted-foreground/60">{minuendOnesOriginal}</span>
-                    </div>
-                  </>
-                );
-              } else {
-                // Should not happen for 'sub-borrow' stage due to problem generation logic, but as a fallback:
-                return (
-                  <>
-                    <span className="w-10 text-center">{minuendTensOriginal || '\u00A0'}</span>
-                    <span className="w-10 text-center">{minuendOnesOriginal}</span>
-                  </>
-                );
-              }
-            })()}
+          <div className="grid grid-cols-2 gap-x-1 w-auto mb-2"> {/* Increased mb slightly */}
+            {/* Tens Column for Minuend */}
+            <div className="relative w-10 text-center">
+              {problem.actualIsBorrowingNeeded ? (
+                <>
+                  <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl text-orange-500 font-semibold select-none">
+                    {Math.floor(problem.minuend / 10) - 1 < 0 ? ' ' : Math.floor(problem.minuend / 10) - 1}
+                  </span>
+                  <span className="line-through text-muted-foreground/70">
+                    {Math.floor(problem.minuend / 10) || '\u00A0'}
+                  </span>
+                </>
+              ) : (
+                <span>{Math.floor(problem.minuend / 10) || '\u00A0'}</span>
+              )}
+            </div>
+            {/* Ones Column for Minuend */}
+            <div className="relative w-10 text-center">
+              {problem.actualIsBorrowingNeeded ? (
+                <>
+                  <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl text-orange-500 font-semibold select-none">
+                    {(problem.minuend % 10) + 10}
+                  </span>
+                  <span className="line-through text-muted-foreground/70">
+                    {problem.minuend % 10}
+                  </span>
+                </>
+              ) : (
+                <span>{problem.minuend % 10}</span>
+              )}
+            </div>
           </div>
 
           {/* Operator + Subtrahend Row */}
