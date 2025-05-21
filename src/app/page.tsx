@@ -1,255 +1,59 @@
 
-"use client";
-
-import type * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LevelSelector } from '@/components/place-value/LevelSelector';
-import { BlockDisplay } from '@/components/place-value/BlockDisplay';
-import { QuizControls } from '@/components/place-value/QuizControls';
-import { ScoreDisplay } from '@/components/place-value/ScoreDisplay';
-import { AITutorDialog } from '@/components/place-value/AITutorDialog';
-import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptive-tutoring';
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Home, ThumbsUp, XCircle } from 'lucide-react';
-import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@/lib/constants';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Puzzle } from 'lucide-react';
 
-type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
-type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
+export const metadata: Metadata = {
+  title: 'Learning Adventures',
+  description: 'A collection of fun educational apps!',
+};
 
-export default function PlaceValuePage(): React.JSX.Element {
-  const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
-  const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE);
-  
-  const [targetNumber, setTargetNumber] = useState<number>(0);
-  const [tens, setTens] = useState<number>(0);
-  const [ones, setOnes] = useState<number>(0);
-  const [options, setOptions] = useState<number[]>([]);
-  
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  
-  const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
-  
-  const [lastSelectedAnswerForAI, setLastSelectedAnswerForAI] = useState<number>(0);
-  const [lastCorrectAnswerForAI, setLastCorrectAnswerForAI] = useState<number>(0);
-
-  const [aiTutorExplanation, setAiTutorExplanation] = useState<string>("");
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
-
-  const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
-
-  const { toast } = useToast();
-
-  const generateOptions = useCallback((correctNum: number, maxNum: number): number[] => {
-    const incorrectOptions = new Set<number>();
-    while (incorrectOptions.size < 3) {
-      const randomOffset = Math.floor(Math.random() * 10) + 1;
-      let potentialOption;
-      if (Math.random() < 0.5) {
-        potentialOption = Math.random() < 0.5 ? correctNum + randomOffset : correctNum - randomOffset;
-      } else {
-        potentialOption = Math.floor(Math.random() * maxNum) + 1;
-      }
-      
-      if (potentialOption !== correctNum && potentialOption > 0 && potentialOption <= maxNum) {
-        incorrectOptions.add(potentialOption);
-      }
-    }
-    const allOptions = [correctNum, ...Array.from(incorrectOptions)];
-    return allOptions.sort(() => Math.random() - 0.5);
-  }, []);
-
-  const generateNewQuestion = useCallback((maxNum: number) => {
-    const newTarget = Math.floor(Math.random() * maxNum) + 1;
-    setTargetNumber(newTarget);
-    setTens(Math.floor(newTarget / 10));
-    setOnes(newTarget % 10);
-    setOptions(generateOptions(newTarget, maxNum));
-    setSelectedAnswer(null);
-    setGameStage("playing");
-  }, [generateOptions]);
-
-  const handleLevelSelect = (maxNumberFromLevel: number) => {
-    setCurrentMaxNumber(maxNumberFromLevel);
-    setScore({ correct: 0, total: 0 });
-    generateNewQuestion(maxNumberFromLevel);
-  };
-
-  const handleGoHome = () => {
-    setGameStage("levelSelection");
-    setScore({ correct: 0, total: 0 });
-    setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); 
-  };
-
-  const proceedToNextStep = useCallback(() => {
-    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0) && score.total !== 0) { // Check score.total !==0 to avoid AI trigger at start
-       setGameStage("evaluatingAI");
-    } else {
-      generateNewQuestion(currentMaxNumber);
-    }
-  }, [score.total, currentMaxNumber, generateNewQuestion]);
-
-  const handleAnswerSelect = (answer: number) => {
-    setSelectedAnswer(answer); 
-    
-    if (answer === targetNumber) {
-      setLastSelectedAnswerForAI(answer); 
-      setLastCorrectAnswerForAI(targetNumber);
-      setScore(prev => ({ 
-        correct: prev.correct + 1,
-        total: prev.total + 1 
-      }));
-      setFeedbackAnimation({ type: 'correct', key: Date.now() });
-      setGameStage("answered"); 
-      setTimeout(() => {
-        proceedToNextStep();
-      }, 1200); 
-    } else {
-      // For incorrect answers, we don't update lastSelected/CorrectAnswerForAI yet,
-      // as the AI tutor should be based on overall performance after a batch.
-      // The score.total is incremented when a question is finally answered correctly or if we move on.
-      // For now, just show feedback.
-      setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
-      // User stays on the same question, gameStage remains "playing".
-    }
-  };
-  
-  const handleShowHint = () => {
-    toast({
-      title: "Hint!",
-      description: `Try counting the tens and ones blocks carefully!`,
-      duration: 2000, 
-    });
-  };
-
-  useEffect(() => {
-    if (feedbackAnimation) {
-      const timer = setTimeout(() => setFeedbackAnimation(null), 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [feedbackAnimation]);
-
-
-  useEffect(() => {
-    if (gameStage === "evaluatingAI") {
-      const callAI = async () => {
-        setIsLoadingAI(true);
-        try {
-          const aiInput: AdaptiveTutoringInput = {
-            level: currentMaxNumber,
-            studentAnswer: lastSelectedAnswerForAI, // This uses the last correctly answered question's data
-            correctAnswer: lastCorrectAnswerForAI,
-            score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
-          };
-          const aiResponse = await adaptiveTutoring(aiInput);
-          
-          let nextLevel = Math.max(MIN_LEVEL_MAX_VALUE, aiResponse.nextLevel);
-          nextLevel = Math.min(MAX_LEVEL_MAX_VALUE, nextLevel);
-          
-          setCurrentMaxNumber(nextLevel);
-          setAiTutorExplanation(aiResponse.explanation);
-          setGameStage("aiFeedback");
-          setScore({ correct: 0, total: 0 }); 
-        } catch (error) {
-          console.error("Error with AI Tutor:", error);
-          toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive", duration: 3000 });
-          setScore({ correct: 0, total: 0 });
-          generateNewQuestion(currentMaxNumber); 
-        } finally {
-          setIsLoadingAI(false);
-        }
-      };
-      callAI();
-    }
-  }, [gameStage, currentMaxNumber, lastSelectedAnswerForAI, lastCorrectAnswerForAI, score, toast, generateNewQuestion]);
-
-  const handleAIClose = () => {
-    generateNewQuestion(currentMaxNumber);
-  };
-
-  if (isLoadingAI) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="mt-4 text-xl text-muted-foreground">Our AI Tutor is thinking...</p>
-      </div>
-    );
-  }
-
+export default function PortalHomePage() {
   return (
-    <div className="w-full flex flex-col items-center space-y-6 py-6 relative">
-      <div className="w-full max-w-3xl flex justify-between items-start mb-4 px-2">
-        {gameStage !== "levelSelection" ? (
-           <ScoreDisplay correct={score.correct} total={score.total} />
-        ) : <div className="h-10"/>} 
-        
-        {gameStage !== "levelSelection" && (
-          <Button variant="outline" size="lg" onClick={handleGoHome} className="shadow-md">
-            <Home className="mr-2 h-5 w-5" /> Home
-          </Button>
-        )}
+    <div className="flex flex-col items-center justify-center w-full flex-1 px-4 py-12">
+      <header className="mb-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">Learning Adventures</h1>
+        <p className="text-lg md:text-xl text-muted-foreground">Select an app to start learning!</p>
+      </header>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+        <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
+          <CardHeader className="items-center text-center p-6 bg-secondary/30">
+            <div className="p-4 bg-accent/20 rounded-full mb-4 inline-block">
+              <Puzzle className="h-12 w-12 md:h-16 md:w-16 text-accent" />
+            </div>
+            <CardTitle className="text-xl md:text-2xl">Place Value Puzzles</CardTitle>
+            <CardDescription className="mt-1 text-sm md:text-base">Master tens and ones with fun challenges!</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 flex justify-center">
+            <Link href="/apps/place-value" passHref>
+              <Button size="lg" className="w-full text-base md:text-lg">
+                Play Now
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* You can add more <Card> components here for future apps */}
+        {/* Example of a placeholder card for a future app:
+        <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden opacity-50">
+          <CardHeader className="items-center text-center p-6 bg-secondary/30">
+            <div className="p-4 bg-muted/30 rounded-full mb-4 inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground"><path d="M12 2H2v10l9.29 9.29a2.82 2.82 0 0 0 4-4L12 2z"></path><path d="M7 7h.01"></path></svg>
+            </div>
+            <CardTitle className="text-xl md:text-2xl">Future App</CardTitle>
+            <CardDescription className="mt-1 text-sm md:text-base">Coming Soon!</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 flex justify-center">
+            <Button size="lg" className="w-full text-base md:text-lg" disabled>
+              Coming Soon
+            </Button>
+          </CardContent>
+        </Card>
+        */}
       </div>
-
-      {gameStage === "levelSelection" && (
-        <LevelSelector 
-          onLevelSelect={handleLevelSelect} 
-          disabled={isLoadingAI || gameStage === "evaluatingAI"}
-        />
-      )}
-
-      {(gameStage === "playing" || gameStage === "answered") && (
-        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-stretch mt-2">
-          <Card className="shadow-xl flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-3xl text-center text-primary">Count the Blocks!</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow"> 
-              <BlockDisplay 
-                tens={tens} 
-                ones={ones}
-              />
-            </CardContent>
-          </Card>
-          <div className="flex flex-col h-full pt-2 md:pt-0"> 
-            <QuizControls
-              options={options}
-              onAnswerSelect={handleAnswerSelect}
-              onShowHint={handleShowHint}
-              isAnswered={gameStage === "answered"}
-              selectedAnswer={selectedAnswer}
-              correctAnswer={targetNumber}
-              className="mt-auto" 
-              disabled={gameStage === "answered" && selectedAnswer === targetNumber}
-            />
-          </div>
-        </div>
-      )}
-
-      {feedbackAnimation && (
-        <div 
-          key={feedbackAnimation.key} 
-          className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
-        >
-          <div className={`p-8 rounded-full shadow-2xl 
-            ${feedbackAnimation.type === 'correct' ? 'bg-green-500/80' : 'bg-red-500/80'} 
-            animate-scale-up-pop`}
-          >
-            {feedbackAnimation.type === 'correct' ? (
-              <ThumbsUp className="h-24 w-24 text-white" />
-            ) : (
-              <XCircle className="h-24 w-24 text-white" />
-            )}
-          </div>
-        </div>
-      )}
-
-      <AITutorDialog
-        isOpen={gameStage === "aiFeedback"}
-        onClose={handleAIClose}
-        explanation={aiTutorExplanation}
-        newLevel={currentMaxNumber}
-      />
     </div>
   );
 }
