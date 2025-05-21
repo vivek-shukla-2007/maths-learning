@@ -3,6 +3,7 @@
 
 import type * as React from 'react';
 import { Star, Plus } from 'lucide-react';
+import { cn } from "@/lib/utils"; // Added missing import
 
 interface AdditionProblem {
   num1: number;
