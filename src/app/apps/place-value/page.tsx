@@ -17,8 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid } from 'lucide-react';
 import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE, LEVELS } from '@/lib/constants';
 
-// Metadata export was removed as it's not allowed in "use client" components.
-// Document title is set using useEffect below.
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
@@ -119,9 +117,18 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
   
   const handleShowHint = () => {
+    let hintDescription = `Look carefully! There are ${tens} tens and ${ones} ones.`;
+    if (tens === 0 && ones > 0) {
+        hintDescription = `Look carefully! There are ${ones} ones.`;
+    } else if (ones === 0 && tens > 0) {
+        hintDescription = `Look carefully! There are ${tens} tens.`;
+    } else if (tens === 0 && ones === 0) { // Should not happen in normal gameplay
+        hintDescription = `Count the blocks!`;
+    }
+
     toast({
       title: "Hint!",
-      description: `Try counting the tens and ones blocks carefully!`,
+      description: hintDescription,
       duration: 2000, 
     });
   };
@@ -261,3 +268,4 @@ export default function PlaceValuePage(): React.JSX.Element {
     </div>
   );
 }
+
