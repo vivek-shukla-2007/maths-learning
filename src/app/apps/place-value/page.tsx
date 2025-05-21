@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import type { Metadata } from 'next';
+// Removed Metadata import as it's not used here for export
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -14,24 +14,18 @@ import { ScoreDisplay } from '@/components/place-value/ScoreDisplay';
 import { AITutorDialog } from '@/components/place-value/AITutorDialog';
 import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptive-tutoring';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid } from 'lucide-react'; // Added LayoutGrid, ListRestart
-import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@/lib/constants';
+import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid } from 'lucide-react';
+import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE, LEVELS } from '@/lib/constants';
 
-// Game-specific metadata
-// Note: Metadata export is typically for Server Components, but Next.js might pick it up for static generation info.
-// For dynamic titles in Client Components, you'd use `document.title` in useEffect.
-// However, placing it here is a common pattern if the page could be pre-rendered or for SEO hints.
-export const metadata: Metadata = {
-  title: 'Place Value Puzzles',
-  description: 'Learn place values with interactive puzzles!',
-};
+// Metadata export was removed as it's not allowed in "use client" components.
+// Document title is set using useEffect below.
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 type FeedbackAnimation = { type: 'correct' | 'incorrect', key: number } | null;
 
 export default function PlaceValuePage(): React.JSX.Element {
   const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
-  const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE);
+  const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(LEVELS[0].max);
   
   const [targetNumber, setTargetNumber] = useState<number>(0);
   const [tens, setTens] = useState<number>(0);
@@ -81,14 +75,19 @@ export default function PlaceValuePage(): React.JSX.Element {
     setGameStage("playing");
   }, [generateOptions]);
 
+  const handleLevelSelect = (levelMax: number) => {
+    setCurrentMaxNumber(levelMax);
+    generateNewQuestion(levelMax);
+  };
+
   const handleGameMenu = () => {
     setGameStage("levelSelection");
     setScore({ correct: 0, total: 0 });
-    setCurrentMaxNumber(MIN_LEVEL_MAX_VALUE); 
+    setCurrentMaxNumber(LEVELS[0].max); 
   };
 
   const proceedToNextStep = useCallback(() => {
-    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0) && score.total !== 0) {
+    if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) { 
        setGameStage("evaluatingAI");
     } else {
       generateNewQuestion(currentMaxNumber);
@@ -109,12 +108,10 @@ export default function PlaceValuePage(): React.JSX.Element {
       setGameStage("answered"); 
       setTimeout(() => {
         proceedToNextStep();
-        setFeedbackAnimation(null); // Clear animation before next question
+        setFeedbackAnimation(null); 
       }, 1200); 
     } else {
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
-      // User stays on the same question, gameStage remains "playing".
-      // Score is not incremented for incorrect answers.
       setTimeout(() => {
         setFeedbackAnimation(null);
       }, 1200); 
@@ -175,7 +172,6 @@ export default function PlaceValuePage(): React.JSX.Element {
     );
   }
   
-  // Set document title for client components if metadata isn't picked up
   useEffect(() => {
     document.title = 'Place Value Puzzles';
   }, []);
@@ -184,7 +180,7 @@ export default function PlaceValuePage(): React.JSX.Element {
   return (
     <div className="w-full flex flex-col items-center space-y-6 py-6 relative">
       <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2">
-        <div className="flex-1"> {/* Flex container for score to push it left */}
+        <div className="flex-1"> 
           {gameStage !== "levelSelection" && (
             <ScoreDisplay correct={score.correct} total={score.total} />
           )}
@@ -241,7 +237,7 @@ export default function PlaceValuePage(): React.JSX.Element {
       {feedbackAnimation && (
         <div 
           key={feedbackAnimation.key} 
-          className="fixed inset-0 flex items-center justify-center pointer-events-none z-50" // Changed to fixed for full viewport overlay
+          className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
         >
           <div className={`p-8 rounded-full shadow-2xl 
             ${feedbackAnimation.type === 'correct' ? 'bg-green-500/80' : 'bg-red-500/80'} 
