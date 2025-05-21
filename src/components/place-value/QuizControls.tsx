@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -13,7 +14,7 @@ interface QuizControlsProps {
   feedback: string;
   isAnswered: boolean;
   selectedAnswer: number | null;
-  correctAnswer: number | null; // Null if not answered or hint not shown for correct answer
+  correctAnswer: number | null;
 }
 
 export function QuizControls({
@@ -29,8 +30,8 @@ export function QuizControls({
   
   const getButtonVariant = (option: number) => {
     if (!isAnswered) return "outline";
-    if (option === correctAnswer) return "default"; // Correct answer is always primary
-    if (option === selectedAnswer && option !== correctAnswer) return "destructive"; // Incorrectly selected
+    if (option === correctAnswer) return "default";
+    if (option === selectedAnswer && option !== correctAnswer) return "destructive";
     return "outline";
   };
 
@@ -44,7 +45,7 @@ export function QuizControls({
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardContent className="p-6 space-y-4">
-        <p className="text-center text-xl font-semibold text-primary">What number do the blocks show?</p>
+        {/* Removed "What number do the blocks show?" text from here */}
         <div className="grid grid-cols-2 gap-4">
           {options.map((option) => (
             <Button
@@ -65,7 +66,7 @@ export function QuizControls({
           <div className={`text-center p-3 rounded-md text-md font-medium ${
               feedback.toLowerCase().startsWith("correct") ? 'bg-green-100 text-green-700' : 
               feedback.toLowerCase().startsWith("oops") ? 'bg-red-100 text-red-700' :
-              'bg-blue-100 text-blue-700' // For hints
+              'bg-blue-100 text-blue-700'
             }`}>
             {feedback}
           </div>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -11,14 +12,14 @@ import { ScoreDisplay } from '@/components/place-value/ScoreDisplay';
 import { AITutorDialog } from '@/components/place-value/AITutorDialog';
 import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptive-tutoring';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Zap } from 'lucide-react';
+import { Loader2, Zap, Home } from 'lucide-react'; // Added Home icon
 import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE } from '@/lib/constants';
 
 type GameStage = "levelSelection" | "playing" | "answered" | "evaluatingAI" | "aiFeedback";
 
 export default function PlaceValuePage(): React.JSX.Element {
   const [gameStage, setGameStage] = useState<GameStage>("levelSelection");
-  const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE); // Max number for current questions, AI adjusted
+  const [currentMaxNumber, setCurrentMaxNumber] = useState<number>(MIN_LEVEL_MAX_VALUE);
   
   const [targetNumber, setTargetNumber] = useState<number>(0);
   const [tens, setTens] = useState<number>(0);
@@ -42,11 +43,11 @@ export default function PlaceValuePage(): React.JSX.Element {
   const generateOptions = useCallback((correctNum: number, maxNum: number): number[] => {
     const incorrectOptions = new Set<number>();
     while (incorrectOptions.size < 3) {
-      const randomOffset = Math.floor(Math.random() * 10) + 1; // 1 to 10
+      const randomOffset = Math.floor(Math.random() * 10) + 1;
       let potentialOption;
-      if (Math.random() < 0.5) { // Nearby numbers
+      if (Math.random() < 0.5) {
         potentialOption = Math.random() < 0.5 ? correctNum + randomOffset : correctNum - randomOffset;
-      } else { // Random numbers within range
+      } else {
         potentialOption = Math.floor(Math.random() * maxNum) + 1;
       }
       
@@ -55,7 +56,7 @@ export default function PlaceValuePage(): React.JSX.Element {
       }
     }
     const allOptions = [correctNum, ...Array.from(incorrectOptions)];
-    return allOptions.sort(() => Math.random() - 0.5); // Shuffle
+    return allOptions.sort(() => Math.random() - 0.5);
   }, []);
 
   const generateNewQuestion = useCallback((maxNum: number) => {
@@ -74,6 +75,13 @@ export default function PlaceValuePage(): React.JSX.Element {
     setScore({ correct: 0, total: 0 });
     setQuestionsInBatch(0);
     generateNewQuestion(maxNumberFromLevel);
+  };
+
+  const handleGoHome = () => {
+    setGameStage("levelSelection");
+    // Optionally reset score or other game state if needed when going home
+    setScore({ correct: 0, total: 0 });
+    setQuestionsInBatch(0);
   };
 
   const handleAnswerSelect = (answer: number) => {
@@ -118,20 +126,19 @@ export default function PlaceValuePage(): React.JSX.Element {
           };
           const aiResponse = await adaptiveTutoring(aiInput);
           
-          let nextLevel = Math.max(MIN_LEVEL_MAX_VALUE, aiResponse.nextLevel); // Ensure min level
-          nextLevel = Math.min(MAX_LEVEL_MAX_VALUE, nextLevel); // Ensure max level
+          let nextLevel = Math.max(MIN_LEVEL_MAX_VALUE, aiResponse.nextLevel);
+          nextLevel = Math.min(MAX_LEVEL_MAX_VALUE, nextLevel);
           
           setCurrentMaxNumber(nextLevel);
           setAiTutorExplanation(aiResponse.explanation);
           setGameStage("aiFeedback");
-          // Reset for new batch
           setScore({ correct: 0, total: 0 }); 
           setQuestionsInBatch(0);
         } catch (error) {
           console.error("Error with AI Tutor:", error);
           toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive" });
-          setGameStage("playing"); // Fallback to continue playing
-          generateNewQuestion(currentMaxNumber); // Generate a new question at current level
+          setGameStage("playing");
+          generateNewQuestion(currentMaxNumber);
         } finally {
           setIsLoadingAI(false);
         }
@@ -155,7 +162,19 @@ export default function PlaceValuePage(): React.JSX.Element {
   }
 
   return (
-    <div className="w-full flex flex-col items-center space-y-8 py-8">
+    <div className="w-full flex flex-col items-center space-y-6 py-6">
+      <div className="w-full flex justify-between items-center mb-4 px-2">
+        {gameStage !== "levelSelection" && (
+           <ScoreDisplay correct={score.correct} total={score.total} />
+        )}
+        <div className="flex-grow"></div> {/* Spacer */}
+        {gameStage !== "levelSelection" && (
+          <Button variant="outline" size="lg" onClick={handleGoHome} className="shadow-md">
+            <Home className="mr-2 h-5 w-5" /> Home
+          </Button>
+        )}
+      </div>
+
       <header className="text-center">
         <h1 className="text-5xl font-bold text-primary">
           <Zap className="inline-block h-12 w-12 mr-2 text-accent" />
@@ -169,17 +188,17 @@ export default function PlaceValuePage(): React.JSX.Element {
       )}
 
       {(gameStage === "playing" || gameStage === "answered") && (
-        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-start">
+        <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8 items-start mt-6">
           <Card className="shadow-xl">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-primary">Count the Blocks!</CardTitle>
+              <CardTitle className="text-3xl text-center text-primary">Count the Blocks!</CardTitle>
             </CardHeader>
             <CardContent>
               <BlockDisplay tens={tens} ones={ones} />
             </CardContent>
           </Card>
-          <div className="space-y-6">
-            <ScoreDisplay correct={score.correct} total={score.total} />
+          <div className="space-y-6 flex flex-col justify-between h-full">
+            {/* QuizControls will be at the bottom of this flex column */}
             <QuizControls
               options={options}
               onAnswerSelect={handleAnswerSelect}

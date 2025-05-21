@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -12,15 +13,15 @@ export function ScoreDisplay({ correct, total }: ScoreDisplayProps): React.JSX.E
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   return (
-    <Card className="w-full max-w-xs shadow-md">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-center text-xl text-primary">Your Score</CardTitle>
+    <Card className="w-auto shadow-sm border-none bg-transparent"> {/* Made card less prominent */}
+      <CardHeader className="p-1 pb-0 text-center md:text-left"> {/* Reduced padding */}
+        <CardTitle className="text-md text-muted-foreground">Score</CardTitle> {/* Smaller title */}
       </CardHeader>
-      <CardContent className="text-center">
-        <p className="text-3xl font-bold text-accent-foreground">
+      <CardContent className="p-1 text-center md:text-left"> {/* Reduced padding */}
+        <p className="text-2xl font-bold text-foreground"> {/* Smaller score, standard text color */}
           {correct} / {total}
         </p>
-        {total > 0 && <p className="text-sm text-muted-foreground">({percentage}%)</p>}
+        {total > 0 && <p className="text-xs text-muted-foreground">({percentage}%)</p>} {/* Smaller percentage */}
       </CardContent>
     </Card>
   );
