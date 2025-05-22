@@ -3,9 +3,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-// Metadata for this page is primarily handled by the RootLayout,
-// but we can define specific metadata for server components if needed.
-// For now, we'll rely on the RootLayout's title.
+// Metadata for this page (main portal)
+export const metadata: Metadata = {
+  title: 'Learning Adventures Portal',
+  description: 'Choose a fun learning app!',
+};
 
 export default function PortalHomePage() {
   return (

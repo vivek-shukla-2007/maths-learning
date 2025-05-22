@@ -1,34 +1,26 @@
 
 // src/app/not-found.tsx
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Home } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-      <Card className="w-full max-w-md p-8 shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-4xl font-bold text-destructive mb-4">
-            Oops! Page Not Found
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-lg text-muted-foreground">
-            We couldn't find the page you were looking for.
-          </p>
-          <p className="text-md text-muted-foreground">
-            It seems you've tried to access a route like <code className="bg-muted px-1 py-0.5 rounded text-sm">/page</code>, which doesn't exist in this application.
-          </p>
-          <Button asChild size="lg">
-            <Link href="/">
-              <Home className="mr-2 h-5 w-5" />
-              Go Back to Home
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+    <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'sans-serif', color: 'hsl(var(--foreground))', backgroundColor: 'hsl(var(--background))', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ padding: '40px', border: '1px solid hsl(var(--border))', borderRadius: '8px', backgroundColor: 'hsl(var(--card))' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'hsl(var(--destructive))', marginBottom: '1rem' }}>
+          Oops! Page Not Found
+        </h1>
+        <p style={{ fontSize: '1.125rem', color: 'hsl(var(--muted-foreground))' }}>
+          We couldn't find the page you were looking for.
+        </p>
+        <p style={{ fontSize: '1rem', color: 'hsl(var(--muted-foreground))', marginTop: '1rem' }}>
+          It seems you've tried to access a route like <code style={{ backgroundColor: 'hsl(var(--muted))', padding: '2px 4px', borderRadius: '4px', fontSize: '0.875rem' }}>/page</code>, which doesn't exist in this application.
+        </p>
+        <Link href="/" style={{ marginTop: '2rem', display: 'inline-block' }}>
+          <button style={{ padding: '12px 24px', fontSize: '1rem', cursor: 'pointer', backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', border: 'none', borderRadius: '0.5rem' }}>
+            Go Back to Home
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }
