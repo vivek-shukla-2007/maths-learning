@@ -2,7 +2,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Minus, Plus } from 'lucide-react';
+// Plus and Minus icons were for a generic puzzle icon, replaced by specific SVGs.
+// If you need generic icons for other cards later, you can re-import them.
+// import { Puzzle, Plus, MinusSquare } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Learning Adventures',
@@ -18,6 +20,7 @@ export default function PortalHomePage() {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+        {/* Place Value Puzzles Card */}
         <Link href="/apps/place-value" className="block hover:cursor-pointer h-full">
           <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden h-full flex flex-col">
             <CardHeader className="items-center text-center p-6 bg-secondary/30 flex-grow">
@@ -40,6 +43,7 @@ export default function PortalHomePage() {
           </Card>
         </Link>
 
+        {/* Addition Adventure Card */}
         <Link href="/apps/addition" className="block hover:cursor-pointer h-full">
           <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden h-full flex flex-col">
             <CardHeader className="items-center text-center p-6 bg-secondary/30 flex-grow">
@@ -56,6 +60,7 @@ export default function PortalHomePage() {
           </Card>
         </Link>
 
+        {/* Subtraction Sprints Card */}
         <Link href="/apps/subtraction" className="block hover:cursor-pointer h-full">
           <Card className="w-full max-w-xs sm:max-w-sm shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden h-full flex flex-col">
             <CardHeader className="items-center text-center p-6 bg-secondary/30 flex-grow">
