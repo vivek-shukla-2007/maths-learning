@@ -23,7 +23,7 @@ interface SubtractionProblem {
   subtrahend: number;
   correctAnswer: number;
   options: number[];
-  actualIsBorrowingNeeded?: boolean; // To ensure stage 3 problems require borrowing
+  actualIsBorrowingNeeded?: boolean; 
 }
 
 interface Stage3Inputs {
@@ -43,7 +43,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
 
   const [score, setScore] = useState<{ correct: number, total: number }>({ correct: 0, total: 0 });
 
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false); // Placeholder for AI features
+  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false); 
   const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
   const { toast } = useToast();
 
@@ -84,28 +84,34 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     let actualIsBorrowingNeeded = false;
 
     if (stage.id === 'sub-visual' || stage.id === 'sub-numbers') {
-      minuend = Math.floor(Math.random() * (stage.maxMinuend - 1)) + 1; 
-      subtrahend = Math.floor(Math.random() * minuend); 
-       if (minuend === subtrahend && minuend > 0) {
+      // For sub-numbers, maxMinuend is now 10
+      minuend = Math.floor(Math.random() * (stage.maxMinuend - 1)) + 1; // Minuend is 1 to maxMinuend
+      subtrahend = Math.floor(Math.random() * (minuend + 1)); // Subtrahend is 0 to minuend (to allow M - M = 0)
+       if (minuend === subtrahend && minuend > 0 && stage.id === 'sub-visual') { // Ensure visual subtraction isn't 0 for simplicity
            subtrahend = Math.max(0, subtrahend -1); 
-       } else if (minuend === 0) { 
+       } else if (minuend === 0) { // Should not happen with +1 logic but as safeguard
            minuend = 1; subtrahend = 0; 
        }
     } else if (stage.id === 'sub-borrow') {
       let onesMinuend = 0, onesSubtrahend = 0;
-      let tensMinuend = 0;
+      let tensMinuend = 0, tensSubtrahend = 0;
       do {
-        minuend = Math.floor(Math.random() * 80) + 20; // 20-99
-        subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10; // 10 to minuend-1, prefer >10
-        if (subtrahend >= minuend) subtrahend = minuend -1; 
+        minuend = Math.floor(Math.random() * 89) + 11; // Minuend 11-99
+        subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10; // Ensure subtrahend allows for a positive or zero result and is at least 10.
+                                                                     // And also ensure subtrahend is smaller than minuend.
+        
+        if (subtrahend >= minuend) subtrahend = minuend -1; // Ensure subtrahend is smaller.
+        if (subtrahend < 10) subtrahend = 10; // Ensure subtrahend is at least 10.
+        if (minuend - subtrahend <= 0 && minuend > 10) minuend = subtrahend + (Math.floor(Math.random()*5)+1) // ensure positive result if initial generation was bad
 
         onesMinuend = minuend % 10;
         tensMinuend = Math.floor(minuend / 10);
         onesSubtrahend = subtrahend % 10;
+        tensSubtrahend = Math.floor(subtrahend/10);
         
         actualIsBorrowingNeeded = onesMinuend < onesSubtrahend && tensMinuend > 0;
 
-      } while (!actualIsBorrowingNeeded || minuend - subtrahend <= 0 || minuend - subtrahend >= 100); 
+      } while (!actualIsBorrowingNeeded || minuend - subtrahend <= 0 || minuend - subtrahend >= 100 || tensSubtrahend === 0); // ensure borrowing, positive 2-digit result, and 2-digit subtrahend
     }
 
     const correctAnswer = minuend - subtrahend;
@@ -152,7 +158,8 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
       setTimeout(() => {
         setFeedbackAnimation(null);
         if (currentStageId === 'sub-borrow') {
-           setStage3Inputs(initialStage3Inputs); // Clear inputs for retry on Stage 3
+           // Clear inputs for retry on Stage 3, but don't clear if it's just an animation period
+           // setStage3Inputs(initialStage3Inputs); // Keep inputs to allow correction
            setGameView("playing"); 
         } else {
            // For stages 1 and 2, user clicks again on an option
@@ -201,17 +208,17 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     let hintDescription = "Try counting carefully!";
 
     if (stage?.id === 'sub-visual') { 
-        hintDescription = `What is ${currentProblem.minuend} take away ${currentProblem.subtrahend}?`;
+        hintDescription = `What is ${currentProblem.minuend} take away ${currentProblem.subtrahend}? Count the items left.`;
     } else if (stage?.id === 'sub-numbers') {
       hintDescription = `What is ${currentProblem.minuend} minus ${currentProblem.subtrahend}?`;
     } else if (stage?.id === 'sub-borrow') {
-       hintDescription = `Remember to borrow if the top digit in a column is smaller than the bottom digit. Subtract column by column, starting from the right (ones place).`;
+       hintDescription = `Remember: if the top digit in the ones column is smaller than the bottom digit, you need to borrow 1 ten from the tens column. The tens digit becomes one less, and the ones digit becomes 10 more. Then subtract column by column.`;
     }
 
     toast({
       title: "Hint!",
       description: hintDescription,
-      duration: stage?.id === 'sub-borrow' ? 4000 : 3000,
+      duration: stage?.id === 'sub-borrow' ? 5000 : 3000,
     });
   };
 
@@ -324,3 +331,4 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     </div>
   );
 }
+

@@ -31,22 +31,22 @@ export const ADDITION_STAGES: AdditionStage[] = [
     id: 'add-visual',
     name: 'Stage 1: Visual Counting (Sums up to 10)',
     minOperandValue: 1,
-    maxOperandValue: 9,
+    maxOperandValue: 9, // Max sum 10, so 9+1 or 5+5 etc.
     description: 'Count the stars to find the sum!'
   },
   {
     id: 'add-numbers',
     name: 'Stage 2: Numbers Only (Sums up to 19)',
-    minOperandValue: 0,
-    maxOperandValue: 10,
+    minOperandValue: 0, // Allow 0+X
+    maxOperandValue: 10, // A single operand can be up to 10. If one is 10, other is 0-9.
     description: 'Add the numbers together.'
   },
   {
     id: 'add-carry',
     name: 'Stage 3: Column Addition (Carry)',
-    minOperandValue: 1, // Operands will be such that their sum is >= 10 and <=99
-    maxOperandValue: 99, // Placeholder, actual logic is more nuanced
-    description: 'Practice addition with carrying.'
+    minOperandValue: 1, 
+    maxOperandValue: 99,
+    description: 'Practice addition with carrying. Input the sum and carry digits.'
   },
 ];
 
@@ -67,14 +67,15 @@ export const SUBTRACTION_STAGES: SubtractionStage[] = [
   },
   {
     id: 'sub-numbers',
-    name: 'Stage 2: Numbers Only (Minuend up to 19)',
-    maxMinuend: 19,
+    name: 'Stage 2: Numbers Only (Minuend up to 10)',
+    maxMinuend: 10, // << UPDATED
     description: 'Subtract the numbers.'
   },
   {
     id: 'sub-borrow',
     name: 'Stage 3: Column Subtraction (Borrowing)',
     maxMinuend: 99, // For two-digit subtraction
-    description: 'Practice subtraction with borrowing.'
+    description: 'Practice subtraction with borrowing. Input the difference.'
   },
 ];
+
