@@ -2,7 +2,6 @@
 "use client";
 
 import type * as React from 'react';
-// Removed Metadata import as it's not used here for export
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -75,6 +74,7 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   const handleLevelSelect = (levelMax: number) => {
     setCurrentMaxNumber(levelMax);
+    setScore({ correct: 0, total: 0 });
     generateNewQuestion(levelMax);
   };
 
@@ -90,7 +90,7 @@ export default function PlaceValuePage(): React.JSX.Element {
     } else {
       generateNewQuestion(currentMaxNumber);
     }
-  }, [score.total, currentMaxNumber, generateNewQuestion]);
+  }, [score.total, score.correct, currentMaxNumber, generateNewQuestion]); // Added score.correct to dependency
 
   const handleAnswerSelect = (answer: number) => {
     setSelectedAnswer(answer); 
@@ -110,6 +110,8 @@ export default function PlaceValuePage(): React.JSX.Element {
       }, 1200); 
     } else {
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
+      // Total score isn't incremented for incorrect answers on the same question
+      // User stays on the same question to retry
       setTimeout(() => {
         setFeedbackAnimation(null);
       }, 1200); 
@@ -117,12 +119,12 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
   
   const handleShowHint = () => {
-    let hintDescription = `Look carefully! There are ${tens} tens and ${ones} ones.`;
+    let hintDescription = `Look carefully! There are ${tens} ${tens === 1 ? "ten" : "tens"} and ${ones} ${ones === 1 ? "one" : "ones"}.`;
     if (tens === 0 && ones > 0) {
-        hintDescription = `Look carefully! There are ${ones} ones.`;
+        hintDescription = `Look carefully! There are ${ones} ${ones === 1 ? "one" : "ones"}.`;
     } else if (ones === 0 && tens > 0) {
-        hintDescription = `Look carefully! There are ${tens} tens.`;
-    } else if (tens === 0 && ones === 0) { // Should not happen in normal gameplay
+        hintDescription = `Look carefully! There are ${tens} ${tens === 1 ? "ten" : "tens"}.`;
+    } else if (tens === 0 && ones === 0) { 
         hintDescription = `Count the blocks!`;
     }
 
@@ -155,7 +157,7 @@ export default function PlaceValuePage(): React.JSX.Element {
           setScore({ correct: 0, total: 0 }); 
         } catch (error) {
           console.error("Error with AI Tutor:", error);
-          toast({ title: "AI Tutor Error", description: "Could not get feedback from AI tutor. Continuing with current level.", variant: "destructive", duration: 3000 });
+          toast({ title: "AI Tutor Error", description: "Could not get feedback. Continuing with current level.", variant: "destructive", duration: 3000 });
           setScore({ correct: 0, total: 0 });
           generateNewQuestion(currentMaxNumber); 
         } finally {
@@ -170,6 +172,10 @@ export default function PlaceValuePage(): React.JSX.Element {
     generateNewQuestion(currentMaxNumber);
   };
 
+  useEffect(() => {
+    document.title = 'Place Value Puzzles';
+  }, []);
+
   if (isLoadingAI) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -179,11 +185,6 @@ export default function PlaceValuePage(): React.JSX.Element {
     );
   }
   
-  useEffect(() => {
-    document.title = 'Place Value Puzzles';
-  }, []);
-
-
   return (
     <div className="w-full flex flex-col items-center space-y-6 py-6 relative">
       <div className="w-full max-w-4xl flex justify-between items-center mb-6 px-2">
@@ -194,13 +195,13 @@ export default function PlaceValuePage(): React.JSX.Element {
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           {gameStage !== "levelSelection" && (
-            <Button variant="outline" size="lg" onClick={handleGameMenu} className="shadow-md text-sm md:text-base">
-              <ListRestart className="mr-2 h-4 w-4 md:h-5 md:w-5" /> Game Menu
+            <Button variant="outline" size="icon" onClick={handleGameMenu} className="shadow-md" aria-label="Game Menu">
+              <ListRestart className="h-5 w-5" />
             </Button>
           )}
-          <Link href="/" passHref>
-            <Button variant="secondary" size="lg" className="shadow-md text-sm md:text-base">
-              <LayoutGrid className="mr-2 h-4 w-4 md:h-5 md:w-5" /> All Apps
+          <Link href="/">
+            <Button variant="secondary" size="icon" className="shadow-md" aria-label="All Apps">
+              <LayoutGrid className="h-5 w-5" />
             </Button>
           </Link>
         </div>
@@ -235,7 +236,7 @@ export default function PlaceValuePage(): React.JSX.Element {
               selectedAnswer={selectedAnswer}
               correctAnswer={targetNumber}
               className="mt-auto" 
-              disabled={gameStage === "answered" && selectedAnswer === targetNumber}
+              disabled={(gameStage === "answered" && selectedAnswer === targetNumber) || gameStage === "evaluatingAI"}
             />
           </div>
         </div>
@@ -268,4 +269,3 @@ export default function PlaceValuePage(): React.JSX.Element {
     </div>
   );
 }
-

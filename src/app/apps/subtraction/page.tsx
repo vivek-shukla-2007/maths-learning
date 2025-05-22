@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScoreDisplay } from '@/components/place-value/ScoreDisplay'; // Reusing for score
+import { ScoreDisplay } from '@/components/place-value/ScoreDisplay'; 
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid } from 'lucide-react';
 import { SUBTRACTION_STAGES } from '@/lib/constants';
@@ -84,12 +84,13 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     let actualIsBorrowingNeeded = false;
 
     if (stage.id === 'sub-visual' || stage.id === 'sub-numbers') {
-      // For sub-numbers, maxMinuend is now 10
-      minuend = Math.floor(Math.random() * (stage.maxMinuend - 1)) + 1; // Minuend is 1 to maxMinuend
-      subtrahend = Math.floor(Math.random() * (minuend + 1)); // Subtrahend is 0 to minuend (to allow M - M = 0)
-       if (minuend === subtrahend && minuend > 0 && stage.id === 'sub-visual') { // Ensure visual subtraction isn't 0 for simplicity
+      minuend = Math.floor(Math.random() * (stage.maxMinuend -1)) + 1; 
+      if (stage.id === 'sub-numbers' && minuend > 10) minuend = 10; // Cap for stage 2
+      
+      subtrahend = Math.floor(Math.random() * (minuend + 1)); 
+      if (minuend === subtrahend && minuend > 0 && stage.id === 'sub-visual') { 
            subtrahend = Math.max(0, subtrahend -1); 
-       } else if (minuend === 0) { // Should not happen with +1 logic but as safeguard
+       } else if (minuend === 0) { 
            minuend = 1; subtrahend = 0; 
        }
     } else if (stage.id === 'sub-borrow') {
@@ -97,12 +98,11 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
       let tensMinuend = 0, tensSubtrahend = 0;
       do {
         minuend = Math.floor(Math.random() * 89) + 11; // Minuend 11-99
-        subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10; // Ensure subtrahend allows for a positive or zero result and is at least 10.
-                                                                     // And also ensure subtrahend is smaller than minuend.
+        subtrahend = Math.floor(Math.random() * (minuend - 10)) + 10; 
         
-        if (subtrahend >= minuend) subtrahend = minuend -1; // Ensure subtrahend is smaller.
-        if (subtrahend < 10) subtrahend = 10; // Ensure subtrahend is at least 10.
-        if (minuend - subtrahend <= 0 && minuend > 10) minuend = subtrahend + (Math.floor(Math.random()*5)+1) // ensure positive result if initial generation was bad
+        if (subtrahend >= minuend) subtrahend = minuend -1; 
+        if (subtrahend < 10) subtrahend = 10; 
+        if (minuend - subtrahend <= 0 && minuend > 10) minuend = subtrahend + (Math.floor(Math.random()*5)+1);
 
         onesMinuend = minuend % 10;
         tensMinuend = Math.floor(minuend / 10);
@@ -111,7 +111,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
         
         actualIsBorrowingNeeded = onesMinuend < onesSubtrahend && tensMinuend > 0;
 
-      } while (!actualIsBorrowingNeeded || minuend - subtrahend <= 0 || minuend - subtrahend >= 100 || tensSubtrahend === 0); // ensure borrowing, positive 2-digit result, and 2-digit subtrahend
+      } while (!actualIsBorrowingNeeded || minuend - subtrahend <= 0 || minuend - subtrahend >= 100 || tensSubtrahend === 0); 
     }
 
     const correctAnswer = minuend - subtrahend;
@@ -158,11 +158,8 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
       setTimeout(() => {
         setFeedbackAnimation(null);
         if (currentStageId === 'sub-borrow') {
-           // Clear inputs for retry on Stage 3, but don't clear if it's just an animation period
-           // setStage3Inputs(initialStage3Inputs); // Keep inputs to allow correction
            setGameView("playing"); 
         } else {
-           // For stages 1 and 2, user clicks again on an option
         }
       }, 1200);
     }
@@ -176,10 +173,9 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
   
   const handleStage3DigitPress = (digit: string) => {
     setStage3Inputs(prev => {
-        // Input from right to left: ones then tens for the difference
         if (prev.diffOnes === '') return { ...prev, diffOnes: digit };
         if (prev.diffTens === '') return { ...prev, diffTens: digit };
-        return prev; // Both filled
+        return prev; 
     });
   };
 
@@ -249,7 +245,7 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
               <ListRestart className="h-5 w-5" />
             </Button>
           )}
-          <Link href="/" passHref>
+          <Link href="/">
             <Button variant="secondary" size="icon" className="shadow-md" aria-label="All Apps">
               <LayoutGrid className="h-5 w-5" />
             </Button>
@@ -331,4 +327,3 @@ export default function SubtractionSprintsPage(): React.JSX.Element {
     </div>
   );
 }
-

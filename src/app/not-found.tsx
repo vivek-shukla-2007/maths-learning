@@ -13,7 +13,7 @@ export default function NotFound() {
           We couldn't find the page you were looking for.
         </p>
         <p style={{ fontSize: '1rem', color: 'hsl(var(--muted-foreground))', marginTop: '1rem' }}>
-          It seems you've tried to access a route like <code style={{ backgroundColor: 'hsl(var(--muted))', padding: '2px 4px', borderRadius: '4px', fontSize: '0.875rem' }}>/page</code>, which doesn't exist in this application.
+          It seems you've tried to access a route that doesn't exist in this application.
         </p>
         <Link href="/" style={{ marginTop: '2rem', display: 'inline-block' }}>
           <button style={{ padding: '12px 24px', fontSize: '1rem', cursor: 'pointer', backgroundColor: 'hsl(var(--primary))', color: 'hsl(var(--primary-foreground))', border: 'none', borderRadius: '0.5rem' }}>
