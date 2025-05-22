@@ -1,45 +1,48 @@
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.js
-/package-lock.json
-/yarn.lock
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# Production
 /build
 
-# misc
+# Misc
 .DS_Store
 *.pem
-*.log
 
-# debug
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
 
-# local env files
-.env.local
-.env.*.local
-# .env # We are currently tracking .env as it's used for placeholders, be careful with secrets
+# Local Environment Variables
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# vercel
-.vercel
+# macOS file system metadata files
+.FBCIndex
+.FBCLockFolder
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Firebase
+.firebase
+firebase-debug.log
 
 # Editor directories and files
 .idea
@@ -48,10 +51,23 @@ next-env.d.ts
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-*.*.*.swp
-*~
-*.sublime-project
 *.sublime-workspace
 
-# Project IDX
-.idx
+# Gatsby files
+.cache/
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/docs/api-reference/next.config.js/exportPathMap#deploying-an-ssg-hybrid-nextjs-site-to-gatsby-cloud
+# public
+
+# System Files
+.AppleDouble
+.LSOverride
+
+# Remix files
+.cache
+build/
+public/build/
+app/build/
+
+# Docusaurus files
+.docusaurus

@@ -1,6 +1,9 @@
 
 "use client";
 
+// This file is intended to catch requests to /page and redirect to the homepage.
+// It may be removed if the root 404 error is resolved and this path is no longer being hit.
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
