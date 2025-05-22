@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LayoutGrid, Rows3, Plus, Minus } from 'lucide-react'; // Assuming Rows3 might be a good general math icon
+import { LayoutGrid, Rows3, Plus, Minus, Puzzle } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Learning Adventures Portal',

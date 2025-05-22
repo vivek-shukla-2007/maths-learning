@@ -11,6 +11,7 @@ export default function PageRedirect() {
     router.replace('/');
   }, [router]);
 
+  // Return a simple loading state or null while redirecting
   return (
     <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <p>Redirecting...</p>
