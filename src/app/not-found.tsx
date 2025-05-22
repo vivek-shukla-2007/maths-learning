@@ -7,7 +7,7 @@ export default function NotFound() {
     <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'sans-serif', color: 'hsl(var(--foreground))', backgroundColor: 'hsl(var(--background))', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ padding: '40px', border: '1px solid hsl(var(--border))', borderRadius: '8px', backgroundColor: 'hsl(var(--card))' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'hsl(var(--destructive))', marginBottom: '1rem' }}>
-          Oops! Page Not Found
+          Oops! Page Not Found (404)
         </h1>
         <p style={{ fontSize: '1.125rem', color: 'hsl(var(--muted-foreground))' }}>
           We couldn't find the page you were looking for.
