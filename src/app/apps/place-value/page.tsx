@@ -13,7 +13,7 @@ import { ScoreDisplay } from '@/components/place-value/ScoreDisplay';
 import { AITutorDialog } from '@/components/place-value/AITutorDialog';
 import { adaptiveTutoring, type AdaptiveTutoringInput } from '@/ai/flows/adaptive-tutoring';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ListRestart, ThumbsUp, XCircle, LayoutGrid } from 'lucide-react';
+import { Loader2, LayoutGrid, ListRestart, ThumbsUp, XCircle } from 'lucide-react';
 import { QUESTIONS_PER_BATCH, MIN_LEVEL_MAX_VALUE, MAX_LEVEL_MAX_VALUE, LEVELS } from '@/lib/constants';
 
 
@@ -42,6 +42,8 @@ export default function PlaceValuePage(): React.JSX.Element {
   const [feedbackAnimation, setFeedbackAnimation] = useState<FeedbackAnimation>(null);
 
   const { toast } = useToast();
+
+  const enableGenKit = process.env.NEXT_PUBLIC_ENABLE_GENKIT === 'true';
 
   const generateOptions = useCallback((correctNum: number, maxNum: number): number[] => {
     const incorrectOptions = new Set<number>();
@@ -85,12 +87,13 @@ export default function PlaceValuePage(): React.JSX.Element {
   };
 
   const proceedToNextStep = useCallback(() => {
+    // Check if it's time for AI evaluation
     if (score.total > 0 && (score.total % QUESTIONS_PER_BATCH === 0)) { 
        setGameStage("evaluatingAI");
     } else {
       generateNewQuestion(currentMaxNumber);
     }
-  }, [score.total, score.correct, currentMaxNumber, generateNewQuestion]); // Added score.correct to dependency
+  }, [score.total, currentMaxNumber, generateNewQuestion]);
 
   const handleAnswerSelect = (answer: number) => {
     setSelectedAnswer(answer); 
@@ -104,13 +107,13 @@ export default function PlaceValuePage(): React.JSX.Element {
       }));
       setFeedbackAnimation({ type: 'correct', key: Date.now() });
       setGameStage("answered"); 
+      
       setTimeout(() => {
         proceedToNextStep();
         setFeedbackAnimation(null); 
       }, 1200); 
     } else {
       setFeedbackAnimation({ type: 'incorrect', key: Date.now() });
-      // Total score isn't incremented for incorrect answers on the same question
       // User stays on the same question to retry
       setTimeout(() => {
         setFeedbackAnimation(null);
@@ -137,36 +140,43 @@ export default function PlaceValuePage(): React.JSX.Element {
 
   useEffect(() => {
     if (gameStage === "evaluatingAI") {
-      const callAI = async () => {
-        setIsLoadingAI(true);
-        try {
-          const aiInput: AdaptiveTutoringInput = {
-            level: currentMaxNumber,
-            studentAnswer: lastSelectedAnswerForAI,
-            correctAnswer: lastCorrectAnswerForAI,
-            score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
-          };
-          const aiResponse = await adaptiveTutoring(aiInput);
-          
-          let nextLevel = Math.max(MIN_LEVEL_MAX_VALUE, aiResponse.nextLevel);
-          nextLevel = Math.min(MAX_LEVEL_MAX_VALUE, nextLevel);
-          
-          setCurrentMaxNumber(nextLevel);
-          setAiTutorExplanation(aiResponse.explanation);
-          setGameStage("aiFeedback");
-          setScore({ correct: 0, total: 0 }); 
-        } catch (error) {
-          console.error("Error with AI Tutor:", error);
-          toast({ title: "AI Tutor Error", description: "Could not get feedback. Continuing with current level.", variant: "destructive", duration: 3000 });
-          setScore({ correct: 0, total: 0 });
-          generateNewQuestion(currentMaxNumber); 
-        } finally {
-          setIsLoadingAI(false);
-        }
-      };
-      callAI();
+      if (enableGenKit) {
+        const callAI = async () => {
+          setIsLoadingAI(true);
+          try {
+            const aiInput: AdaptiveTutoringInput = {
+              level: currentMaxNumber,
+              studentAnswer: lastSelectedAnswerForAI,
+              correctAnswer: lastCorrectAnswerForAI,
+              score: `${score.correct} out of ${Math.max(1, score.total)} correct`, 
+            };
+            const aiResponse = await adaptiveTutoring(aiInput);
+            
+            let nextLevel = Math.max(MIN_LEVEL_MAX_VALUE, aiResponse.nextLevel);
+            nextLevel = Math.min(MAX_LEVEL_MAX_VALUE, nextLevel);
+            
+            setCurrentMaxNumber(nextLevel);
+            setAiTutorExplanation(aiResponse.explanation);
+            setGameStage("aiFeedback");
+            setScore({ correct: 0, total: 0 }); 
+          } catch (error) {
+            console.error("Error with AI Tutor:", error);
+            toast({ title: "AI Tutor Error", description: "Could not get feedback. Continuing with current level.", variant: "destructive", duration: 3000 });
+            setScore({ correct: 0, total: 0 });
+            generateNewQuestion(currentMaxNumber); 
+          } finally {
+            setIsLoadingAI(false);
+          }
+        };
+        callAI();
+      } else {
+        // GenKit is disabled, skip AI evaluation and proceed
+        toast({ title: "AI Tutor Disabled", description: "Continuing with current level.", duration: 2000 });
+        setScore({ correct: 0, total: 0 }); // Reset batch score
+        generateNewQuestion(currentMaxNumber); // Proceed to next question at current level
+      }
     }
-  }, [gameStage, currentMaxNumber, lastSelectedAnswerForAI, lastCorrectAnswerForAI, score, toast, generateNewQuestion]);
+  }, [gameStage, currentMaxNumber, lastSelectedAnswerForAI, lastCorrectAnswerForAI, score, toast, generateNewQuestion, enableGenKit]);
 
   const handleAIClose = () => {
     generateNewQuestion(currentMaxNumber);
@@ -176,7 +186,7 @@ export default function PlaceValuePage(): React.JSX.Element {
     document.title = 'Place Value Puzzles';
   }, []);
 
-  if (isLoadingAI) {
+  if (isLoadingAI && enableGenKit) { // Only show loader if GenKit is enabled and loading
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -260,12 +270,15 @@ export default function PlaceValuePage(): React.JSX.Element {
         </div>
       )}
 
-      <AITutorDialog
-        isOpen={gameStage === "aiFeedback"}
-        onClose={handleAIClose}
-        explanation={aiTutorExplanation}
-        newLevel={currentMaxNumber}
-      />
+      {enableGenKit && (
+        <AITutorDialog
+            isOpen={gameStage === "aiFeedback"}
+            onClose={handleAIClose}
+            explanation={aiTutorExplanation}
+            newLevel={currentMaxNumber}
+        />
+      )}
     </div>
   );
 }
+
