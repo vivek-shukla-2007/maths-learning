@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 interface SubtractionProblem {
   minuend: number;
   subtrahend: number;
-  actualIsBorrowingNeeded?: boolean;
+  actualIsBorrowingNeeded?: boolean; // Still useful for problem generation logic
 }
 
 interface Stage3Inputs {
@@ -29,6 +29,7 @@ const AnswerBox = () => (
   </div>
 );
 
+// Component to display a single digit for the user's answer input in Stage 3
 const DigitDisplayBox = ({
   digit,
   isEmptyPlaceholder = false,
@@ -37,28 +38,33 @@ const DigitDisplayBox = ({
   isEmptyPlaceholder?: boolean;
 }) => {
   let effectiveDigit = digit !== undefined ? String(digit) : '';
-  if (isEmptyPlaceholder && effectiveDigit === '') effectiveDigit = '';
+  if (isEmptyPlaceholder && effectiveDigit === '') effectiveDigit = ''; // Ensure empty string for placeholder
 
   return (
     <div className={cn(
       "w-10 h-10 border-2 rounded-md flex items-center justify-center text-2xl font-mono",
       isEmptyPlaceholder && effectiveDigit === ''
-            ? "border-dashed border-muted-foreground/50"
-            : "border-muted-foreground bg-background/50 text-primary",
-       effectiveDigit === '' && !isEmptyPlaceholder && "text-transparent",
+            ? "border-dashed border-muted-foreground/50" // Style for empty placeholder
+            : "border-muted-foreground bg-background/50 text-primary", // Style for filled or non-placeholder
+       effectiveDigit === '' && !isEmptyPlaceholder && "text-transparent", // Hide text if it's an empty non-placeholder
     )}>
+      {/* Display the digit or a non-breaking space if it's an empty non-placeholder to maintain box height */}
       {effectiveDigit || (isEmptyPlaceholder ? '' : '\u00A0')}
     </div>
   );
 };
 
+// Component to display problem numbers (minuend, subtrahend) with padding for column alignment
 const PaddedNumber = ({ num }: { num: number}) => {
   const strNum = String(num);
+  // For a single digit number like 3, tens should be empty, ones should be '3'
+  // For a two digit number like 12, tens is '1', ones is '2'
   const onesDisplay = strNum.slice(-1);
-  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0';
+  const tensDisplay = strNum.length > 1 ? strNum.slice(-2, -1) : '\u00A0'; // Non-breaking space for empty tens
 
   return (
     <div className="grid grid-cols-2 gap-x-1 w-auto">
+      {/* Each span represents a digit position */}
       <span className="w-10 text-center">{tensDisplay}</span>
       <span className="w-10 text-center">{onesDisplay}</span>
     </div>
@@ -99,8 +105,10 @@ export function ProblemDisplay({
     return <div className="my-2 min-h-[50px]">{rows}</div>;
   };
   
+  // Use the same class as addition for column layout consistency
   const columnDisplayClass = "addition-column-display font-mono text-3xl sm:text-4xl md:text-5xl text-foreground w-full max-w-xs mx-auto";
-  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; 
+  // Calculate line width based on two digit boxes and their gap
+  const stage3LineWidth = "calc(2 * theme(spacing.10) + theme(spacing.1))"; // 2 * w-10 + gap-x-1
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 space-y-4 text-center w-full">
@@ -130,55 +138,24 @@ export function ProblemDisplay({
 
       {stageId === 'sub-borrow' && problem && (
          <div className={cn(columnDisplayClass)}>
-          {/* Minuend Row with Borrowing Visualization */}
-          <div className="grid grid-cols-2 gap-x-1 w-auto mb-2"> {/* Increased mb slightly */}
-            {/* Tens Column for Minuend */}
-            <div className="relative w-10 text-center">
-              {problem.actualIsBorrowingNeeded ? (
-                <>
-                  <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl text-orange-500 font-semibold select-none">
-                    {Math.floor(problem.minuend / 10) - 1 < 0 ? ' ' : Math.floor(problem.minuend / 10) - 1}
-                  </span>
-                  <span className="line-through text-muted-foreground/70">
-                    {Math.floor(problem.minuend / 10) || '\u00A0'}
-                  </span>
-                </>
-              ) : (
-                <span>{Math.floor(problem.minuend / 10) || '\u00A0'}</span>
-              )}
-            </div>
-            {/* Ones Column for Minuend */}
-            <div className="relative w-10 text-center">
-              {problem.actualIsBorrowingNeeded ? (
-                <>
-                  <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xl text-orange-500 font-semibold select-none">
-                    {(problem.minuend % 10) + 10}
-                  </span>
-                  <span className="line-through text-muted-foreground/70">
-                    {problem.minuend % 10}
-                  </span>
-                </>
-              ) : (
-                <span>{problem.minuend % 10}</span>
-              )}
-            </div>
-          </div>
-
+          {/* Minuend Row - Simplified, no borrowing visualization */}
+          <PaddedNumber num={problem.minuend} />
+          
           {/* Operator + Subtrahend Row */}
-          <div className="flex justify-end items-center w-full mt-1">
+          <div className="flex justify-end items-center w-full mt-1"> {/* mt-1 added for slight spacing */}
             <span className="operator text-primary mr-1 sm:mr-2 self-center">-</span>
             <PaddedNumber num={problem.subtrahend} />
           </div>
 
           {/* Line */}
-          <div className="line-container flex justify-end w-full">
+          <div className="line-container flex justify-end w-full"> {/* Ensures line aligns with numbers */}
             <div
-              className="line bg-foreground my-1 sm:my-2 h-[2px]"
-              style={{ width: stage3LineWidth }}
+              className="line bg-foreground my-1 sm:my-2 h-[2px]" // my-1 or my-2 for spacing
+              style={{ width: stage3LineWidth }} // Dynamic width for the line
             ></div>
           </div>
 
-          {/* Result Row (Difference) */}
+          {/* Result Row (Difference) - User input boxes */}
           <div className="grid grid-cols-2 gap-x-1 w-auto">
             <DigitDisplayBox digit={stage3Inputs.diffTens} isEmptyPlaceholder={true} />
             <DigitDisplayBox digit={stage3Inputs.diffOnes} isEmptyPlaceholder={true} />
