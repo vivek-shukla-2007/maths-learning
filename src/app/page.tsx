@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LayoutGrid, Rows3, Plus, Minus, Puzzle } from 'lucide-react';
+import { Rows3, Plus, Minus } from 'lucide-react'; // Puzzle icon was previously used, ensure it's available or update
 
 export const metadata: Metadata = {
   title: 'Learning Adventures Portal',
