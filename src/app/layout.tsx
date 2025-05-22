@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Learning Adventures',
-  description: 'A collection of fun educational apps!',
+  title: 'Maths learning',
+  description: 'A collection of fun educational math apps!',
 };
 
 export default function RootLayout({

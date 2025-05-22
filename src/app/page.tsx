@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: 'Learning Adventures Portal',
-  description: 'Choose a fun learning app!',
+  title: 'Maths learning Portal',
+  description: 'Choose a fun learning math app!',
 };
 
 export default function PortalHomePage() {
   return (
     <div className="flex flex-col items-center justify-center w-full flex-1 px-4 py-12">
       <header className="mb-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">Learning Adventures</h1>
+        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">Maths learning</h1>
         <p className="text-lg md:text-xl text-muted-foreground">Select an app to start learning!</p>
       </header>
 
