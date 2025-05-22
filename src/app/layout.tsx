@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Place Value Puzzles',
-  description: 'Learn place values with interactive puzzles!',
+  title: 'Learning Adventures',
+  description: 'A collection of fun educational apps!',
 };
 
 export default function RootLayout({

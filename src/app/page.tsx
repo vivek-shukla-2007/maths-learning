@@ -2,14 +2,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-// Plus and Minus icons were for a generic puzzle icon, replaced by specific SVGs.
-// If you need generic icons for other cards later, you can re-import them.
-// import { Puzzle, Plus, MinusSquare } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Learning Adventures',
-  description: 'A collection of fun educational apps!',
-};
+// Metadata for this page is primarily handled by the RootLayout,
+// but we can define specific metadata for server components if needed.
+// For now, we'll rely on the RootLayout's title.
 
 export default function PortalHomePage() {
   return (
